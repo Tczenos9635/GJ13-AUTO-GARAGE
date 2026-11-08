@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>GJ13 AUTO GARAGE</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              DEFAULT: '#0F2C59',
+              dark: '#081a36',
+              light: '#1b3f7a',
+              subtle: '#eaf0f8'
+            },
+            garage: {
+              green: '#16A34A',
+              orange: '#F97316',
+              orangeDark: '#ea580c',
+              red: '#DC2626'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans Gujarati"', '"Noto Sans Devanagari"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Gujarati', 'Noto Sans Devanagari', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: auto;
+    }
+    /* Hide scrollbar for tabs and horizontal scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Shake animation for invalid PIN */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim {
+      animation: shake 0.4s ease-in-out;
+    }
+    /* Safe area insets for mobile edge-to-edge */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 8px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- ========================================== -->
+  <!-- 1. PIN AUTHENTICATION SCREEN (OVERLAY) -->
+  <!-- ========================================== -->
+  <div id="pinScreen" class="fixed inset-0 z-50 bg-[#0F2C59] flex flex-col justify-between p-6 text-white transition-opacity duration-300">
+    <div class="w-full flex justify-between items-center pt-safe">
+      <div class="flex items-center gap-2">
+        <img src="logo.png" onerror="this.onerror=null; this.src='ic_garage_logo.png';" alt="GJ13 Garage" class="w-9 h-9 rounded-lg object-contain bg-white/10 p-1">
+        <span class="font-extrabold tracking-wider text-sm text-orange-400">GJ13 AUTO GARAGE</span>
+      </div>
+      <!-- Mini Language Switcher on PIN screen -->
+      <div class="flex bg-white/10 rounded-full p-0.5 text-xs font-semibold">
+        <button onclick="setLanguage('en')" class="lang-btn-pin px-2.5 py-1 rounded-full transition" data-lang="en">ENG</button>
+        <button onclick="setLanguage('hi')" class="lang-btn-pin px-2.5 py-1 rounded-full transition" data-lang="hi">हिन्दी</button>
+        <button onclick="setLanguage('gu')" class="lang-btn-pin px-2.5 py-1 rounded-full transition" data-lang="gu">ગુજરાતી</button>
+      </div>
+    </div>
+
+    <!-- Center Display -->
+    <div class="flex flex-col items-center justify-center my-auto text-center px-4">
+      <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30 mb-4">
+        <i class="fa-solid fa-motorcycle text-white text-3xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white mb-1" id="pinTitle">Enter Security PIN</h1>
+      <p class="text-slate-300 text-xs mb-6 max-w-xs" id="pinSubtitle">Access your garage Khatabook & stock records securely</p>
+
+      <!-- 4 PIN Dots -->
+      <div id="pinDotsContainer" class="flex gap-4 justify-center items-center my-2">
+        <div class="pin-dot w-4 h-4 rounded-full border-2 border-white/50 transition-all duration-200"></div>
+        <div class="pin-dot w-4 h-4 rounded-full border-2 border-white/50 transition-all duration-200"></div>
+        <div class="pin-dot w-4 h-4 rounded-full border-2 border-white/50 transition-all duration-200"></div>
+        <div class="pin-dot w-4 h-4 rounded-full border-2 border-white/50 transition-all duration-200"></div>
+      </div>
+      <p id="pinErrorMsg" class="text-red-400 text-xs font-semibold mt-3 h-5"></p>
+    </div>
+
+    <!-- Numeric Keypad -->
+    <div class="w-full max-w-xs mx-auto pb-safe">
+      <div class="grid grid-cols-3 gap-3 text-center">
+        <button onclick="handlePinInput('1')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">1</button>
+        <button onclick="handlePinInput('2')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">2</button>
+        <button onclick="handlePinInput('3')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">3</button>
+        <button onclick="handlePinInput('4')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">4</button>
+        <button onclick="handlePinInput('5')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">5</button>
+        <button onclick="handlePinInput('6')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">6</button>
+        <button onclick="handlePinInput('7')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">7</button>
+        <button onclick="handlePinInput('8')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">8</button>
+        <button onclick="handlePinInput('9')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">9</button>
+        <button onclick="clearPin()" class="h-16 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-sm font-bold text-slate-300 transition flex items-center justify-center" data-i18n="clear">CLEAR</button>
+        <button onclick="handlePinInput('0')" class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-2xl font-semibold transition flex items-center justify-center">0</button>
+        <button onclick="deletePinDigit()" class="h-16 rounded-2xl bg-white/5 hover:bg-white/15 active:scale-95 text-xl text-orange-400 transition flex items-center justify-center"><i class="fa-solid fa-delete-left"></i></button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MAIN APP CONTAINER (HEADER + VIEWS + NAV) -->
+  <!-- ========================================== -->
+  <div id="mainApp" class="flex-1 flex flex-col max-w-lg mx-auto w-full bg-slate-50 min-h-screen relative shadow-2xl">
+
+    <!-- TOP HEADER -->
+    <header class="bg-[#0F2C59] text-white pt-safe px-4 pb-3 sticky top-0 z-30 shadow-md">
+      <div class="flex items-center justify-between">
+        <!-- Logo & Garage Name -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-slate-900/60 p-1 border border-orange-500/40 flex items-center justify-center overflow-hidden">
+            <img src="logo.png" onerror="this.onerror=null; this.src='ic_garage_logo.png';" alt="Logo" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <h1 class="text-base font-extrabold tracking-wide text-white leading-tight">GJ13 AUTO GARAGE</h1>
+          </div>
+        </div>
+
+        <!-- Language Selector & Lock Button -->
+        <div class="flex items-center gap-1.5">
+          <div class="flex bg-slate-800/80 rounded-lg p-0.5 border border-white/10 text-[11px] font-bold">
+            <button onclick="setLanguage('en')" class="lang-btn px-2 py-0.5 rounded transition" data-lang="en">ENG</button>
+            <button onclick="setLanguage('hi')" class="lang-btn px-2 py-0.5 rounded transition" data-lang="hi">हिन्दी</button>
+            <button onclick="setLanguage('gu')" class="lang-btn px-2 py-0.5 rounded transition" data-lang="gu">ગુજરાતી</button>
+          </div>
+          <button onclick="lockApp()" class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 active:scale-95 text-slate-300 transition" title="Lock App">
+            <i class="fa-solid fa-lock text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY (SCROLLABLE VIEWS) -->
+    <main class="flex-1 overflow-y-auto pb-24 p-4">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: HOME (DASHBOARD) -->
+      <!-- ========================================== -->
+      <section id="viewHome" class="space-y-4">
+        <!-- Welcome & Date Banner -->
+        <div class="flex items-center justify-between text-xs text-slate-500 px-0.5">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-check text-[#0F2C59]"></i>
+            <span id="currentDateDisplay" class="font-medium"></span>
+          </div>
+          <span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full text-[10px]" data-i18n="activeShop">Open • Ready</span>
+        </div>
+
+        <!-- 3 Primary KPI Cards: Sales, Expenses, Net Profit -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <!-- Sales -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] font-medium text-slate-500" data-i18n="todaySales">Today Sales</span>
+              <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+              </div>
+            </div>
+            <div class="text-base font-extrabold text-[#16A34A]" id="dashTodaySales">₹0</div>
+            <span class="text-[9px] text-slate-400 mt-0.5" data-i18n="cashOnline">Cash + UPI</span>
+          </div>
+
+          <!-- Expenses -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] font-medium text-slate-500" data-i18n="todayExpense">Today Expense</span>
+              <div class="w-6 h-6 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+            </div>
+            <div class="text-base font-extrabold text-[#F97316]" id="dashTodayExpenses">₹0</div>
+            <span class="text-[9px] text-slate-400 mt-0.5" data-i18n="shopPersonal">Kharch</span>
+          </div>
+
+          <!-- Net Profit -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[11px] font-medium text-slate-500" data-i18n="todayProfit">Net Profit</span>
+              <div class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-coins"></i>
+              </div>
+            </div>
+            <div class="text-base font-extrabold text-[#0F2C59]" id="dashTodayProfit">₹0</div>
+            <span class="text-[9px] text-emerald-600 font-medium mt-0.5" data-i18n="realProfit">Formula Based</span>
+          </div>
+        </div>
+
+        <!-- 2 Secondary Cards: Stock Value & Low Stock Alert -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-[#0F2C59] flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-500 font-medium block" data-i18n="totalStockVal">Total Stock Value</span>
+              <span class="text-base font-bold text-slate-800" id="dashTotalStockValue">₹0</span>
+            </div>
+          </div>
+
+          <div onclick="switchTab('stock'); filterLowStockOnly();" class="bg-white rounded-2xl p-3.5 border border-red-200 shadow-sm flex items-center gap-3 cursor-pointer active:scale-95 transition">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-lg shrink-0">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <span class="text-[11px] text-red-600 font-bold block" data-i18n="lowStockItems">Low Stock Items</span>
+              <span class="text-base font-extrabold text-red-600" id="dashLowStockCount">0 Items</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Banner -->
+        <div class="bg-gradient-to-r from-[#0F2C59] to-[#183b70] rounded-2xl p-4 text-white shadow-md">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-orange-300 mb-2.5" data-i18n="quickActions">Quick Actions</h3>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="switchTab('bill')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white py-2.5 px-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 shadow-sm transition">
+              <i class="fa-solid fa-file-invoice text-sm"></i>
+              <span data-i18n="btnNewBill">New Bill</span>
+            </button>
+            <button onclick="openAddStockModal()" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white py-2.5 px-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition">
+              <i class="fa-solid fa-circle-plus text-sm text-amber-300"></i>
+              <span data-i18n="btnAddStock">Add Stock</span>
+            </button>
+            <button onclick="openAddExpenseModal()" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white py-2.5 px-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition">
+              <i class="fa-solid fa-receipt text-sm text-orange-300"></i>
+              <span data-i18n="btnAddExpense">Add Expense</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Invoices List -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-[#0F2C59]"></i>
+              <span data-i18n="recentInvoices">Recent Invoices</span>
+            </h3>
+            <button onclick="switchTab('reports')" class="text-xs font-semibold text-orange-600 hover:underline" data-i18n="viewAll">View All &rarr;</button>
+          </div>
+          <div id="recentInvoicesList" class="divide-y divide-slate-100 space-y-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: BILL (QUICK ENTRY & BILLING) -->
+      <!-- ========================================== -->
+      <section id="viewBill" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <h2 class="text-base font-extrabold text-[#0F2C59] flex items-center gap-2">
+              <i class="fa-solid fa-wrench text-orange-500"></i>
+              <span data-i18n="billingTitle">Bike Service & Bill Entry</span>
+            </h2>
+            <button onclick="resetBillForm()" class="text-xs text-slate-500 hover:text-red-500 font-semibold" data-i18n="reset">Reset</button>
+          </div>
+
+          <!-- Customer Details -->
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="customerName">Customer Name *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-user"></i></span>
+                <input type="text" id="custName" placeholder="e.g. Mukeshbhai Patel" class="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-[#0F2C59] focus:ring-1 focus:ring-[#0F2C59]">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="phoneNumber">Phone Number *</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs font-bold">+91</span>
+                  <input type="tel" id="custPhone" maxlength="10" placeholder="9876543210" class="w-full pl-9 pr-2 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-[#0F2C59]">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="bikeModel">Bike / Scooter Model *</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-motorcycle"></i></span>
+                  <input type="text" id="bikeModel" placeholder="e.g. Hero Splendor+" class="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-[#0F2C59]">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Checklist -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-screwdriver-wrench text-[#0F2C59]"></i>
+              <span data-i18n="servicesTitle">Select Services Done</span>
+            </h3>
+            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full" id="servicesCountBadge">0 selected</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-3" data-i18n="servicesSubtitle">Check services performed on bike</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="servicesCheckboxGrid">
+            <!-- Populated via JavaScript for dynamic language labels -->
+          </div>
+
+          <!-- Manual Labour Charge -->
+          <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-hand-holding-dollar text-orange-500"></i>
+              <span data-i18n="additionalLabour">Additional Labour (₹)</span>
+            </label>
+            <input type="number" id="manualLabourInput" value="0" min="0" oninput="calculateBillTotals()" class="w-24 text-right px-2.5 py-1.5 text-sm font-bold rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+          </div>
+        </div>
+
+        <!-- Parts From Stock Selection -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-2">
+            <i class="fa-solid fa-gears text-[#0F2C59]"></i>
+            <span data-i18n="partsTitle">Spare Parts & Oil Selection</span>
+          </h3>
+          <p class="text-xs text-slate-400 mb-3" data-i18n="partsSubtitle">Select parts used from inventory (auto stock deduction)</p>
+
+          <!-- Add Part Line Controls -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 mb-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1" data-i18n="choosePart">Choose Part from Inventory</label>
+              <select id="partSelectDropdown" class="w-full text-xs font-medium py-2 px-2.5 rounded-xl border border-slate-300 bg-white focus:border-[#0F2C59]">
+                <option value="" data-i18n="selectPartPlaceholder">-- Select Spare Part --</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <label class="block text-[10px] font-bold text-slate-500" data-i18n="qty">Quantity</label>
+                <input type="number" id="partQtyInput" min="1" value="1" class="w-full text-sm font-bold py-1.5 px-2 rounded-xl border border-slate-300 text-center">
+              </div>
+              <div class="flex-1 text-right">
+                <span class="block text-[10px] font-bold text-slate-500" data-i18n="availableStock">Stock</span>
+                <span id="partStockPreview" class="text-xs font-extrabold text-slate-600">-</span>
+              </div>
+              <button onclick="addPartToBill()" type="button" class="mt-4 bg-[#0F2C59] hover:bg-[#183b70] active:scale-95 text-white font-bold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="addBtn">Add</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Billed Parts Table -->
+          <div id="billedPartsContainer" class="space-y-1.5">
+            <!-- Line items injected here -->
+            <p id="noPartsAddedMsg" class="text-center text-xs text-slate-400 py-2 italic" data-i18n="noPartsYet">No spare parts added yet</p>
+          </div>
+        </div>
+
+        <!-- Bill Summary & Calculation Card -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-md">
+          <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
+            <span data-i18n="billSummary">Bill Summary</span>
+            <span class="text-xs text-slate-400 font-normal" id="currentBillDateTime"></span>
+          </h3>
+
+          <div class="space-y-2 text-xs border-b border-slate-100 pb-3">
+            <div class="flex justify-between text-slate-600">
+              <span data-i18n="servicesTotal">Services Total:</span>
+              <span class="font-bold text-slate-800" id="summaryServicesTotal">₹0</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span data-i18n="partsTotal">Parts Total:</span>
+              <span class="font-bold text-slate-800" id="summaryPartsTotal">₹0</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span data-i18n="labourCharge">Labour Charge:</span>
+              <span class="font-bold text-slate-800" id="summaryLabourTotal">₹0</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600">
+              <span data-i18n="discount">Discount (₹):</span>
+              <input type="number" id="billDiscountInput" value="0" min="0" oninput="calculateBillTotals()" class="w-20 text-right px-2 py-1 text-xs font-bold rounded-lg border border-slate-300">
+            </div>
+          </div>
+
+          <!-- Final Grand Total -->
+          <div class="flex items-center justify-between pt-3 mb-4">
+            <div>
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="grandTotal">Final Bill Amount</span>
+              <span class="text-[10px] text-emerald-600 block font-semibold" data-i18n="allTaxesIncluded">All inclusive</span>
+            </div>
+            <div class="text-2xl font-black text-[#16A34A]" id="summaryGrandTotal">₹0</div>
+          </div>
+
+          <!-- Main CTA: SAVE & STOCK MINUS -->
+          <button onclick="saveInvoiceAndProcess()" class="w-full bg-[#16A34A] hover:bg-emerald-700 active:scale-98 text-white font-extrabold py-3.5 px-4 rounded-xl text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-check-to-slot text-base"></i>
+            <span data-i18n="btnSaveAndMinus">SAVE & STOCK MINUS</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: STOCK (INVENTORY MANAGEMENT) -->
+      <!-- ========================================== -->
+      <section id="viewStock" class="space-y-4 hidden">
+        <!-- Stock KPI Banner -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] font-medium text-slate-500 block" data-i18n="totalStockVal">Total Stock Value</span>
+            <span class="text-base font-extrabold text-[#0F2C59]" id="stockTabValue">₹0</span>
+            <span class="text-[10px] text-slate-400 mt-0.5 block" id="stockTabRetailVal">Retail: ₹0</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] font-medium text-slate-500 block" data-i18n="stockItemsCount">Total Parts</span>
+            <span class="text-base font-extrabold text-slate-800" id="stockTabTotalItems">0</span>
+            <div class="flex gap-2 text-[10px] mt-0.5 font-bold">
+              <span class="text-red-500" id="stockTabLowCount">0 Low</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-amber-600" id="stockTabOutCount">0 Out</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Actions & Search -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-[#0F2C59] flex items-center gap-2">
+              <i class="fa-solid fa-boxes-stacked text-orange-500"></i>
+              <span data-i18n="inventoryList">Parts & Spare Inventory</span>
+            </h2>
+            <button onclick="openAddStockModal()" class="bg-[#0F2C59] hover:bg-[#183b70] text-white text-xs font-bold py-2 px-3 rounded-xl flex items-center gap-1.5 active:scale-95 transition">
+              <i class="fa-solid fa-plus"></i>
+              <span data-i18n="addNewPart">Add Part</span>
+            </button>
+          </div>
+
+          <!-- Search & Filter Bar -->
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+              <input type="text" id="stockSearchInput" oninput="renderStockList()" placeholder="Search part or brand..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:border-[#0F2C59]">
+            </div>
+            <button id="lowStockFilterBtn" onclick="toggleLowStockFilter()" class="text-xs font-bold px-3 py-2 rounded-xl border border-slate-300 text-slate-600 bg-slate-50 hover:bg-slate-100 flex items-center gap-1 transition">
+              <i class="fa-solid fa-filter"></i>
+              <span data-i18n="lowStockOnly">Low Stock</span>
+            </button>
+          </div>
+
+          <!-- Stock Items List -->
+          <div id="stockListContainer" class="divide-y divide-slate-100 pt-1 space-y-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: REPORTS (HISAAB & EXPENSES) -->
+      <!-- ========================================== -->
+      <section id="viewReports" class="space-y-4 hidden">
+        <!-- Time Filter Segmented Buttons -->
+        <div class="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm flex font-bold text-xs">
+          <button onclick="setReportTimeFilter('daily')" class="report-filter-btn flex-1 py-2 rounded-xl transition text-center" data-filter="daily" data-i18n="daily">Daily</button>
+          <button onclick="setReportTimeFilter('weekly')" class="report-filter-btn flex-1 py-2 rounded-xl transition text-center" data-filter="weekly" data-i18n="weekly">Weekly</button>
+          <button onclick="setReportTimeFilter('monthly')" class="report-filter-btn flex-1 py-2 rounded-xl transition text-center" data-filter="monthly" data-i18n="monthly">Monthly</button>
+          <button onclick="setReportTimeFilter('all')" class="report-filter-btn flex-1 py-2 rounded-xl transition text-center" data-filter="all" data-i18n="allTime">All</button>
+        </div>
+
+        <!-- Accurate Net Profit Formula Card -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="netProfitFormula">Net Profit Calculation</span>
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full" id="profitStatusTag">Profitable</span>
+          </div>
+          <div class="text-3xl font-black text-[#16A34A] mb-2" id="reportNetProfit">₹0</div>
+          <p class="text-[11px] text-slate-500 italic bg-slate-50 p-2 rounded-xl border border-slate-100" data-i18n="profitExplanation">
+            Formula: Net Profit = Total Sales (₹<span id="repSubSales">0</span>) - Parts Purchase Cost (₹<span id="repSubCost">0</span>) - Expenses (₹<span id="repSubExp">0</span>).
+          </p>
+        </div>
+
+        <!-- 4 KPI Breakdown Cards -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] text-slate-500 font-medium block" data-i18n="repSales">Total Sales</span>
+            <span class="text-lg font-extrabold text-[#16A34A]" id="reportSales">₹0</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] text-slate-500 font-medium block" data-i18n="repExpenses">Total Expenses</span>
+            <span class="text-lg font-extrabold text-[#F97316]" id="reportExpenses">₹0</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] text-slate-500 font-medium block" data-i18n="repPartsCost">Parts Purchase Cost</span>
+            <span class="text-lg font-extrabold text-slate-700" id="reportPartsCost">₹0</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm">
+            <span class="text-[11px] text-slate-500 font-medium block" data-i18n="repLabourIncome">Labour Income</span>
+            <span class="text-lg font-extrabold text-[#0F2C59]" id="reportLabourIncome">₹0</span>
+          </div>
+        </div>
+
+        <!-- Chart Section: Sales vs Expenses & Profit Trend -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+            <span data-i18n="salesVsExpenseChart">Performance & Trend</span>
+            <i class="fa-solid fa-chart-simple text-orange-500"></i>
+          </h3>
+          <div class="h-48 relative">
+            <canvas id="performanceChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Expense Management Section -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-[#0F2C59] flex items-center gap-2">
+              <i class="fa-solid fa-wallet text-orange-500"></i>
+              <span data-i18n="expenseHistory">Garage Kharch & Expenses</span>
+            </h3>
+            <button onclick="openAddExpenseModal()" class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 px-3 rounded-xl flex items-center gap-1 active:scale-95 transition">
+              <i class="fa-solid fa-plus"></i>
+              <span data-i18n="addExpense">Add Expense</span>
+            </button>
+          </div>
+          <div id="expenseListContainer" class="divide-y divide-slate-100 space-y-2">
+            <!-- Populated via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Data Backup, Export & Reset Section -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
+          <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-database text-[#0F2C59]"></i>
+            <span data-i18n="dataManagement">Data Backup & Settings</span>
+          </h3>
+          <p class="text-xs text-slate-500" data-i18n="backupDesc">Save a copy of all garage data or import previous backup.</p>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="exportBackupJSON()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition">
+              <i class="fa-solid fa-download"></i>
+              <span data-i18n="exportBackup">Export Backup</span>
+            </button>
+            <label class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer">
+              <i class="fa-solid fa-upload"></i>
+              <span data-i18n="importBackup">Import Backup</span>
+              <input type="file" id="importFileInput" accept=".json" onchange="importBackupJSON(event)" class="hidden">
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <button onclick="promptChangePin()" class="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-key"></i>
+              <span data-i18n="changePin">Change Security PIN</span>
+            </button>
+            <button onclick="confirmResetDemoData()" class="text-xs font-bold text-red-600 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span data-i18n="resetDemo">Reset Demo Data</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-slate-200 px-3 py-2 pb-safe z-40 shadow-lg flex justify-around items-center">
+      <!-- Nav 1: Home -->
+      <button onclick="switchTab('home')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0F2C59] transition active:scale-90" data-tab="home">
+        <i class="fa-solid fa-house text-lg mb-1"></i>
+        <span class="text-[10px] font-bold" data-i18n="navHome">Home</span>
+      </button>
+
+      <!-- Nav 2: Bill -->
+      <button onclick="switchTab('bill')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0F2C59] transition active:scale-90" data-tab="bill">
+        <div class="relative">
+          <i class="fa-solid fa-file-invoice text-lg mb-1"></i>
+        </div>
+        <span class="text-[10px] font-bold" data-i18n="navBill">Bill</span>
+      </button>
+
+      <!-- Nav 3: Stock -->
+      <button onclick="switchTab('stock')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0F2C59] transition active:scale-90" data-tab="stock">
+        <div class="relative">
+          <i class="fa-solid fa-boxes-stacked text-lg mb-1"></i>
+          <span id="navStockAlertBadge" class="hidden absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">!</span>
+        </div>
+        <span class="text-[10px] font-bold" data-i18n="navStock">Stock</span>
+      </button>
+
+      <!-- Nav 4: Reports -->
+      <button onclick="switchTab('reports')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0F2C59] transition active:scale-90" data-tab="reports">
+        <i class="fa-solid fa-chart-pie text-lg mb-1"></i>
+        <span class="text-[10px] font-bold" data-i18n="navReports">Reports</span>
+      </button>
+    </nav>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODALS & DRAWERS -->
+  <!-- ========================================== -->
+
+  <!-- MODAL: ADD / EDIT PART MODAL -->
+  <div id="partModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 id="partModalTitle" class="text-base font-extrabold text-[#0F2C59]">Add New Spare Part</h3>
+        <button onclick="closeModal('partModal')" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <input type="hidden" id="modalPartId">
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="partNameLabel">Part Name *</label>
+          <input type="text" id="modalPartName" placeholder="e.g. Engine Oil 20W40 1L" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="brandLabel">Brand Name *</label>
+          <input type="text" id="modalPartBrand" placeholder="e.g. Castrol / Hero / Motul" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1" data-i18n="purchasePriceLabel">Purchase Price (₹) *</label>
+            <input type="number" id="modalPartPurchase" min="0" placeholder="e.g. 280" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1" data-i18n="retailPriceLabel">Retail Price (₹) *</label>
+            <input type="number" id="modalPartRetail" min="0" placeholder="e.g. 380" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="quantityLabel">Quantity Available *</label>
+          <input type="number" id="modalPartQty" min="0" placeholder="e.g. 10" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-[#0F2C59]">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('partModal')" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs" data-i18n="cancel">Cancel</button>
+        <button onclick="savePartRecord()" class="flex-1 py-2.5 rounded-xl bg-[#0F2C59] text-white font-bold text-xs" data-i18n="save">Save Part</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD EXPENSE MODAL -->
+  <div id="expenseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-base font-extrabold text-[#F97316]" data-i18n="addExpenseTitle">Record Garage Expense</h3>
+        <button onclick="closeModal('expenseModal')" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="expCategory">Category *</label>
+          <select id="modalExpCategory" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white">
+            <option value="Shop Rent" data-i18n="catShopRent">Shop Rent</option>
+            <option value="Fuel Cost" data-i18n="catFuelCost">Fuel Cost</option>
+            <option value="Personal Kharch" data-i18n="catPersonal">Personal Kharch</option>
+            <option value="Home Kharch" data-i18n="catHome">Home Kharch</option>
+            <option value="Raw Material" data-i18n="catRawMaterial">Raw Material & Tools</option>
+            <option value="Tea & Breakfast" data-i18n="catTea">Tea / Chai-Nashta</option>
+            <option value="Electricity / Utility" data-i18n="catLight">Light Bill / Utility</option>
+            <option value="Other" data-i18n="catOther">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="amountLabel">Amount (₹) *</label>
+          <input type="number" id="modalExpAmount" min="1" placeholder="e.g. 500" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="dateLabel">Date</label>
+          <input type="date" id="modalExpDate" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" data-i18n="notesLabel">Notes / Description</label>
+          <input type="text" id="modalExpNotes" placeholder="e.g. Rent for November" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('expenseModal')" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs" data-i18n="cancel">Cancel</button>
+        <button onclick="saveExpenseRecord()" class="flex-1 py-2.5 rounded-xl bg-[#F97316] text-white font-bold text-xs" data-i18n="saveExpenseBtn">Save Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INVOICE SUCCESS & WHATSAPP BILL RECEIPT -->
+  <div id="invoiceSuccessModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="text-center">
+        <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl mb-2">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-800" data-i18n="billSavedTitle">Invoice Saved Successfully!</h3>
+        <p class="text-xs text-slate-500" data-i18n="stockUpdatedNote">Inventory stock has been deducted automatically.</p>
+      </div>
+
+      <!-- Printable Styled Bill Preview -->
+      <div id="billPrintCard" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono space-y-2">
+        <div class="text-center border-b border-dashed border-slate-300 pb-2">
+          <h4 class="font-extrabold text-sm text-[#0F2C59]">GJ13 AUTO GARAGE</h4>
+          <p class="text-[10px] text-slate-500">Surendranagar • Ph: +91 98765 43210</p>
+        </div>
+        <div class="flex justify-between text-[11px]">
+          <span id="receiptInvNo">INV-1001</span>
+          <span id="receiptDateTime">08/11/2026</span>
+        </div>
+        <div class="text-[11px] text-slate-700">
+          <div><strong>Cust:</strong> <span id="receiptCustName">-</span> (<span id="receiptPhone">-</span>)</div>
+          <div><strong>Bike:</strong> <span id="receiptBike">-</span></div>
+        </div>
+        <div class="border-t border-dashed border-slate-300 pt-2 space-y-1" id="receiptItemsList">
+          <!-- Injected items -->
+        </div>
+        <div class="border-t border-slate-300 pt-1.5 space-y-1 text-right font-sans">
+          <div class="flex justify-between text-xs font-black text-[#16A34A] pt-1 border-t border-slate-200">
+            <span>TOTAL:</span>
+            <span id="receiptGrandTotal">₹0</span>
+          </div>
+        </div>
+        <p class="text-center text-[10px] text-slate-400 pt-2 border-t border-dashed border-slate-300">Thank you for visiting! Drive safely.</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2">
+        <button id="btnShareWhatsApp" class="w-full bg-[#25D366] hover:bg-emerald-600 active:scale-98 text-white font-black py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition">
+          <i class="fa-brands fa-whatsapp text-lg"></i>
+          <span data-i18n="shareOnWhatsApp">SEND BILL ON WHATSAPP</span>
+        </button>
+
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50">
+            <i class="fa-solid fa-print"></i>
+            <span data-i18n="print">Print</span>
+          </button>
+          <button onclick="closeModal('invoiceSuccessModal'); resetBillForm(); switchTab('home');" class="flex-1 py-2.5 rounded-xl bg-[#0F2C59] text-white font-bold text-xs" data-i18n="done">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <!-- ========================================== -->
+  <script>
+    /* ========================================================
+       1. MULTI-LANGUAGE TRANSLATION DICTIONARY (ENG | हिन्दी | ગુજરાતી)
+       ======================================================== */
+    const translations = {
+      en: {
+        tagline: "Surendranagar • Two Wheeler Specialist",
+        activeShop: "Open • Ready",
+        todaySales: "Today Sales",
+        todayExpense: "Today Expense",
+        todayProfit: "Net Profit",
+        cashOnline: "Cash + UPI",
+        shopPersonal: "Kharch",
+        realProfit: "Formula Based",
+        totalStockVal: "Total Stock Value",
+        lowStockItems: "Low Stock Items",
+        quickActions: "Quick Actions",
+        btnNewBill: "New Bill",
+        btnAddStock: "Add Stock",
+        btnAddExpense: "Add Expense",
+        recentInvoices: "Recent Invoices",
+        viewAll: "View All →",
+        billingTitle: "Bike Service & Bill Entry",
+        reset: "Reset",
+        customerName: "Customer Name *",
+        phoneNumber: "Phone Number *",
+        bikeModel: "Bike / Scooter Model *",
+        servicesTitle: "Select Services Done",
+        servicesSubtitle: "Check services performed on bike",
+        additionalLabour: "Additional Labour (₹)",
+        partsTitle: "Spare Parts & Oil Selection",
+        partsSubtitle: "Select parts used from inventory (auto stock deduction)",
+        choosePart: "Choose Part from Inventory",
+        selectPartPlaceholder: "-- Select Spare Part --",
+        qty: "Quantity",
+        availableStock: "Stock",
+        addBtn: "Add",
+        noPartsYet: "No spare parts added yet",
+        billSummary: "Bill Summary",
+        servicesTotal: "Services Total:",
+        partsTotal: "Parts Total:",
+        labourCharge: "Labour Charge:",
+        discount: "Discount (₹):",
+        grandTotal: "Final Bill Amount",
+        allTaxesIncluded: "All inclusive",
+        btnSaveAndMinus: "SAVE & STOCK MINUS",
+        inventoryList: "Parts & Spare Inventory",
+        addNewPart: "Add Part",
+        lowStockOnly: "Low Stock",
+        stockItemsCount: "Total Parts",
+        daily: "Daily",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        allTime: "All",
+        netProfitFormula: "Net Profit Calculation",
+        profitExplanation: "Formula: Net Profit = Total Sales - Parts Purchase Cost - Expenses.",
+        repSales: "Total Sales",
+        repExpenses: "Total Expenses",
+        repPartsCost: "Parts Purchase Cost",
+        repLabourIncome: "Labour Income",
+        salesVsExpenseChart: "Performance & Trend",
+        expenseHistory: "Garage Kharch & Expenses",
+        addExpense: "Add Expense",
+        dataManagement: "Data Backup & Settings",
+        backupDesc: "Save a copy of all garage data or import previous backup.",
+        exportBackup: "Export Backup",
+        importBackup: "Import Backup",
+        changePin: "Change Security PIN",
+        resetDemo: "Reset Demo Data",
+        navHome: "Home",
+        navBill: "Bill",
+        navStock: "Stock",
+        navReports: "Reports",
+        enterPinTitle: "Enter Security PIN",
+        setPinTitle: "Set New 4-Digit PIN",
+        confirmPinTitle: "Confirm 4-Digit PIN",
+        pinSubtitle: "Access your garage Khatabook & stock records securely",
+        clear: "CLEAR",
+        shareOnWhatsApp: "SEND BILL ON WHATSAPP",
+        print: "Print",
+        done: "Done",
+        billSavedTitle: "Invoice Saved Successfully!",
+        stockUpdatedNote: "Inventory stock has been deducted automatically.",
+        addExpenseTitle: "Record Garage Expense",
+        expCategory: "Category *",
+        amountLabel: "Amount (₹) *",
+        dateLabel: "Date",
+        notesLabel: "Notes / Description",
+        saveExpenseBtn: "Save Expense",
+        partNameLabel: "Part Name *",
+        brandLabel: "Brand Name *",
+        purchasePriceLabel: "Purchase Price (₹) *",
+        retailPriceLabel: "Retail Price (₹) *",
+        quantityLabel: "Quantity Available *",
+        cancel: "Cancel",
+        save: "Save Part",
+        catShopRent: "Shop Rent",
+        catFuelCost: "Fuel Cost",
+        catPersonal: "Personal Kharch",
+        catHome: "Home Kharch",
+        catRawMaterial: "Raw Material & Tools",
+        catTea: "Tea / Chai-Nashta",
+        catLight: "Light Bill / Utility",
+        catOther: "Other",
+        // Services
+        srvBreakTight: "Break Tight",
+        srvChainChakar: "Chain Chakar",
+        srvGeneralService: "General Service",
+        srvEngineWork: "Engine Work",
+        srvOilChange: "Oil Change",
+        srvSeatChange: "Seat Change",
+        srvMeterChain: "Meter Chain",
+        srvTimingChain: "Timing Chain",
+        srvLedLampChange: "LED Lamp Change"
+      },
+      hi: {
+        tagline: "सुरेंद्रनगर • टू-व्हीलर रिपेयर विशेषज्ञ",
+        activeShop: "खुला है • चालू",
+        todaySales: "आज की बिक्री",
+        todayExpense: "आज के खर्चे",
+        todayProfit: "शुद्ध मुनाफा",
+        cashOnline: "नकद + UPI",
+        shopPersonal: "खर्च",
+        realProfit: "फॉर्मूला अनुसार",
+        totalStockVal: "कुल स्टॉक मूल्य",
+        lowStockItems: "कम स्टॉक सामान",
+        quickActions: "त्वरित कार्य",
+        btnNewBill: "नया बिल",
+        btnAddStock: "स्टॉक जोड़ें",
+        btnAddExpense: "खर्चा जोड़ें",
+        recentInvoices: "हाल के बिल",
+        viewAll: "सब देखें →",
+        billingTitle: "बाइक सर्विस एवं बिल एंट्री",
+        reset: "रीसेट",
+        customerName: "ग्राहक का नाम *",
+        phoneNumber: "मोबाइल नंबर *",
+        bikeModel: "गाड़ी / बाइक मॉडल *",
+        servicesTitle: "सर्विस का चयन करें",
+        servicesSubtitle: "बाइक पर किए गए काम चुनें",
+        additionalLabour: "अतिरिक्त मजदूरी (लेबर ₹)",
+        partsTitle: "स्पेयर पार्ट्स एवं ऑइल चुनें",
+        partsSubtitle: "स्टॉक से स्पेयर चुनें (स्टॉक तुरंत घटेगा)",
+        choosePart: "स्टॉक से पार्ट चुनें",
+        selectPartPlaceholder: "-- स्पेयर पार्ट चुनें --",
+        qty: "मात्रा",
+        availableStock: "उपलब्ध",
+        addBtn: "जोड़ें",
+        noPartsYet: "अभी कोई पार्ट नहीं जोड़ा गया",
+        billSummary: "बिल विवरण",
+        servicesTotal: "सर्विस कुल:",
+        partsTotal: "पार्ट्स कुल:",
+        labourCharge: "मजदूरी (लेबर):",
+        discount: "छूट / डिस्काउंट (₹):",
+        grandTotal: "कुल बिल राशि",
+        allTaxesIncluded: "सभी शामिल",
+        btnSaveAndMinus: "बिल बनाएं और स्टॉक घटाएं",
+        inventoryList: "पार्ट्स एवं स्पेयर इन्वेंटरी",
+        addNewPart: "नया पार्ट",
+        lowStockOnly: "कम स्टॉक",
+        stockItemsCount: "कुल सामान",
+        daily: "दैनिक",
+        weekly: "साप्ताहिक",
+        monthly: "मासिक",
+        allTime: "सभी",
+        netProfitFormula: "शुद्ध मुनाफा गणना",
+        profitExplanation: "फॉर्मूला: शुद्ध मुनाफा = कुल बिक्री - पार्ट्स खरीद लागत - खर्चे।",
+        repSales: "कुल बिक्री",
+        repExpenses: "कुल खर्चे",
+        repPartsCost: "पार्ट्स खरीद लागत",
+        repLabourIncome: "मजदूरी आय",
+        salesVsExpenseChart: "बिक्री और खर्च तुलना",
+        expenseHistory: "दुकान खर्च एवं बहीखाता",
+        addExpense: "खर्चा जोड़ें",
+        dataManagement: "डेटा बैकअप एवं सेटिंग्स",
+        backupDesc: "पूरे गैराज डेटा का बैकअप लें या पुराना बैकअप रीस्टोर करें।",
+        exportBackup: "बैकअप डाउनलोड",
+        importBackup: "बैकअप अपलोड",
+        changePin: "पिन बदलें",
+        resetDemo: "डेमो डेटा रीसेट",
+        navHome: "होम",
+        navBill: "बिल",
+        navStock: "स्टॉक",
+        navReports: "रिपोर्ट्स",
+        enterPinTitle: "सुरक्षा पिन दर्ज करें",
+        setPinTitle: "नया 4-अंकीय पिन बनाएं",
+        confirmPinTitle: "पिन की पुष्टि करें",
+        pinSubtitle: "गैराज खाता एवं स्टॉक सुरक्षित रखने हेतु",
+        clear: "हटाएं",
+        shareOnWhatsApp: "व्हाट्सएप पर बिल भेजें",
+        print: "प्रिंट",
+        done: "पूर्ण",
+        billSavedTitle: "बिल सफलतापूर्वक सुरक्षित किया!",
+        stockUpdatedNote: "इन्वेंट्री से इस्तेमाल पार्ट्स की गिनती घटा दी गई है।",
+        addExpenseTitle: "गैराज खर्चा दर्ज करें",
+        expCategory: "खर्च प्रकार *",
+        amountLabel: "रकम (₹) *",
+        dateLabel: "तारीख",
+        notesLabel: "विवरण / नोट",
+        saveExpenseBtn: "खर्चा सुरक्षित करें",
+        partNameLabel: "पार्ट का नाम *",
+        brandLabel: "ब्रांड का नाम *",
+        purchasePriceLabel: "खरीद भाव (₹) *",
+        retailPriceLabel: "बिक्री भाव (₹) *",
+        quantityLabel: "उपलब्ध संख्या *",
+        cancel: "रद्द करें",
+        save: "पार्ट सुरक्षित करें",
+        catShopRent: "दुकान किराया",
+        catFuelCost: "पेट्रोल खर्च",
+        catPersonal: "पर्सनल खर्च",
+        catHome: "घर खर्च",
+        catRawMaterial: "टूल्स एवं सामान",
+        catTea: "चाय / नाश्ता",
+        catLight: "बिजली बिल / अन्य",
+        catOther: "अन्य",
+        // Services
+        srvBreakTight: "ब्रेक टाइट",
+        srvChainChakar: "चेन चक्कर",
+        srvGeneralService: "जनरल सर्विस",
+        srvEngineWork: "इंजन काम",
+        srvOilChange: "ऑइल चेंज",
+        srvSeatChange: "सीट चेंज",
+        srvMeterChain: "मीटर चेन",
+        srvTimingChain: "टाइमिंग चेन",
+        srvLedLampChange: "एलईडी लैंप चेंज"
+      },
+      gu: {
+        tagline: "સુરેન્દ્રનગર • ટુ-વ્હીલર સ્પેશિયાલિસ્ટ",
+        activeShop: "ખુલ્લું છે • ચાલુ",
+        todaySales: "આજનું વેચાણ",
+        todayExpense: "આજના ખર્ચા",
+        todayProfit: "ચોખ્ખો નફો",
+        cashOnline: "રોકડ + UPI",
+        shopPersonal: "ખર્ચ",
+        realProfit: "સાચો હિસાબ",
+        totalStockVal: "કુલ સ્ટોક કિંમત",
+        lowStockItems: "ઓછો સ્ટોક સામાન",
+        quickActions: "ઝડપી કાર્યો",
+        btnNewBill: "નવું બિલ",
+        btnAddStock: "સ્ટોક ઉમેરો",
+        btnAddExpense: "ખર્ચો ઉમેરો",
+        recentInvoices: "તાજેતરના બિલો",
+        viewAll: "બધા જુઓ →",
+        billingTitle: "બાઈક સર્વિસ અને બિલ એન્ટ્રી",
+        reset: "રીસેટ",
+        customerName: "ગ્રાહકનું નામ *",
+        phoneNumber: "મોબાઈલ નંબર *",
+        bikeModel: "બાઈક / સ્કૂટર મોડેલ *",
+        servicesTitle: "સર્વિસ કામ પસંદ કરો",
+        servicesSubtitle: "બાઈકમાં કરેલા કામ સિલેક્ટ કરો",
+        additionalLabour: "વધારાની મજૂરી (₹)",
+        partsTitle: "સ્પેર પાર્ટ્સ અને ઓઇલ",
+        partsSubtitle: "વપરાયેલા પાર્ટ્સ પસંદ કરો (સ્ટોક તરત બાદ થશે)",
+        choosePart: "સ્ટોકમાંથી પાર્ટ પસંદ કરો",
+        selectPartPlaceholder: "-- પાર્ટ પસંદ કરો --",
+        qty: "સંખ્યા",
+        availableStock: "હાજર સ્ટોક",
+        addBtn: "ઉમેરો",
+        noPartsYet: "કોઈ પાર્ટ ઉમેરેલ નથી",
+        billSummary: "બિલ વિગત",
+        servicesTotal: "સર્વિસ કુલ:",
+        partsTotal: "પાર્ટ્સ કુલ:",
+        labourCharge: "મજૂરી:",
+        discount: "ડિસ્કાઉન્ટ / છૂટ (₹):",
+        grandTotal: "કુલ ચૂકવવાપાત્ર રકમ",
+        allTaxesIncluded: "બધું મળીને",
+        btnSaveAndMinus: "બિલ બનાવો અને સ્ટોક ઘટાડો",
+        inventoryList: "પાર્ટ્સ અને સ્ટોક યાદી",
+        addNewPart: "નવો પાર્ટ",
+        lowStockOnly: "ઓછો સ્ટોક",
+        stockItemsCount: "કુલ સામાન",
+        daily: "આજનું",
+        weekly: "અઠવાડિક",
+        monthly: "માસિક",
+        allTime: "બધું",
+        netProfitFormula: "ચોખ્ખો નફો ગણતરી",
+        profitExplanation: "ગણતરી: ચોખ્ખો નફો = કુલ વેચાણ - પાર્ટ્સ ખરીદ કિંમત - ખર્ચા.",
+        repSales: "કુલ વેચાણ",
+        repExpenses: "કુલ ખર્ચા",
+        repPartsCost: "પાર્ટ્સ ખરીદ ખર્ચ",
+        repLabourIncome: "મજૂરી આવક",
+        salesVsExpenseChart: "આવક અને ખર્ચ ચાર્ટ",
+        expenseHistory: "ગેરેજ ખર્ચ અને ખાતાવહી",
+        addExpense: "ખર્ચો ઉમેરો",
+        dataManagement: "ડેટા બેકઅપ અને સેટિંગ્સ",
+        backupDesc: "બધા જ ગેરેજ ડેટાનો બેકઅપ સાચવો અથવા જૂનો બેકઅપ પાછો લાવો.",
+        exportBackup: "બેકઅપ ડાઉનલોડ",
+        importBackup: "બેકઅપ અપલોડ",
+        changePin: "પીન બદલો",
+        resetDemo: "ડેમો ડેટા રીસેટ",
+        navHome: "હોમ",
+        navBill: "બિલ",
+        navStock: "સ્ટોક",
+        navReports: "રિપોર્ટ્સ",
+        enterPinTitle: "સિક્યુરિટી પીન નાખો",
+        setPinTitle: "નવો 4-અંકનો પીન બનાવો",
+        confirmPinTitle: "પીન ફરીથી નાખો",
+        pinSubtitle: "ગેરેજ ખાતાવહી અને સ્ટોક સુરક્ષિત રાખવા માટે",
+        clear: "ભૂંસો",
+        shareOnWhatsApp: "વોટ્સએપ પર બિલ મોકલો",
+        print: "પ્રિન્ટ",
+        done: "પૂર્ણ",
+        billSavedTitle: "બિલ સફળતાપૂર્વક સાચવવામાં આવ્યું!",
+        stockUpdatedNote: "ગોડાઉન સ્ટોકમાંથી પાર્ટ્સ આપોઆપ બાદ થઈ ગયા છે.",
+        addExpenseTitle: "ગેરેજ ખર્ચ નોંધો",
+        expCategory: "ખર્ચનો પ્રકાર *",
+        amountLabel: "રકમ (₹) *",
+        dateLabel: "તારીખ",
+        notesLabel: "વિગત / નોંધ",
+        saveExpenseBtn: "ખર્ચ સાચવો",
+        partNameLabel: "પાર્ટનું નામ *",
+        brandLabel: "બ્રાન્ડનું નામ *",
+        purchasePriceLabel: "ખરીદ કિંમત (₹) *",
+        retailPriceLabel: "વેચાણ કિંમત (₹) *",
+        quantityLabel: "હાજર સંખ્યા *",
+        cancel: "રદ કરો",
+        save: "પાર્ટ સાચવો",
+        catShopRent: "દુકાન ભાડું",
+        catFuelCost: "પેટ્રોલ ખર્ચ",
+        catPersonal: "અંગત ખર્ચ",
+        catHome: "ઘર ખર્ચ",
+        catRawMaterial: "ટૂલ્સ અને સામાન",
+        catTea: "ચા / નાસ્તો",
+        catLight: "લાઇટ બિલ / અન્ય",
+        catOther: "અન્ય",
+        // Services
+        srvBreakTight: "બ્રેક ટાઈટ",
+        srvChainChakar: "ચેઈન ચક્કર",
+        srvGeneralService: "જનરલ સર્વિસ",
+        srvEngineWork: "એન્જિન કામ",
+        srvOilChange: "ઓઈલ બદલો",
+        srvSeatChange: "સીટ કવર / ચેન્જ",
+        srvMeterChain: "મીટર ચેઈન",
+        srvTimingChain: "ટાઈમિંગ ચેઈન",
+        srvLedLampChange: "એલઇડી લાઈટ"
+      }
+    };
+
+    /* Standard Service Definitions with base prices & translation keys */
+    const SERVICES_MASTER = [
+      { id: "srvBreakTight", key: "srvBreakTight", price: 50 },
+      { id: "srvChainChakar", key: "srvChainChakar", price: 80 },
+      { id: "srvGeneralService", key: "srvGeneralService", price: 350 },
+      { id: "srvEngineWork", key: "srvEngineWork", price: 800 },
+      { id: "srvOilChange", key: "srvOilChange", price: 50 },
+      { id: "srvSeatChange", key: "srvSeatChange", price: 120 },
+      { id: "srvMeterChain", key: "srvMeterChain", price: 70 },
+      { id: "srvTimingChain", key: "srvTimingChain", price: 250 },
+      { id: "srvLedLampChange", key: "srvLedLampChange", price: 60 }
+    ];
+
+    /* Sample Realistic Inventory for Gujarati Bike Garage */
+    const DEFAULT_INVENTORY = [
+      { id: "p1", name: "Castrol Activ 4T 20W-40 (1L)", brand: "Castrol", purchasePrice: 280, retailPrice: 380, stockQty: 18 },
+      { id: "p2", name: "Motul 3000 4T Plus 10W-30 (900ml)", brand: "Motul", purchasePrice: 270, retailPrice: 360, stockQty: 12 },
+      { id: "p3", name: "Bosch M4 Spark Plug", brand: "Bosch", purchasePrice: 70, retailPrice: 120, stockQty: 24 },
+      { id: "p4", name: "Hero Splendor Chain Sprocket Kit", brand: "Hero Genuine", purchasePrice: 580, retailPrice: 750, stockQty: 5 },
+      { id: "p5", name: "Brake Shoe Set Front/Rear", brand: "Endurance", purchasePrice: 110, retailPrice: 170, stockQty: 14 },
+      { id: "p6", name: "Clutch Cable Splendor / HF", brand: "Minda", purchasePrice: 55, retailPrice: 90, stockQty: 8 },
+      { id: "p7", name: "Accelerator Cable", brand: "Hero", purchasePrice: 50, retailPrice: 85, stockQty: 2 }, // Low stock sample
+      { id: "p8", name: "LED Headlight Bulb 35W Super Bright", brand: "Philips", purchasePrice: 140, retailPrice: 220, stockQty: 6 },
+      { id: "p9", name: "Air Filter Foam", brand: "Minda", purchasePrice: 40, retailPrice: 70, stockQty: 1 }, // Low stock sample
+      { id: "p10", name: "Tubeless Tyre Valve (TR412)", brand: "SpeedPro", purchasePrice: 20, retailPrice: 50, stockQty: 0 } // Out of stock sample
+    ];
+
+    /* Sample Default Invoices */
+    const DEFAULT_INVOICES = [
+      {
+        id: "INV-1001",
+        customer: "Pravinbhai Vaghela",
+        phone: "9825123456",
+        bike: "Hero HF Deluxe",
+        servicesSelected: [
+          { name: "General Service", price: 350 },
+          { name: "Oil Change", price: 50 }
+        ],
+        partsUsed: [
+          { id: "p1", name: "Castrol Activ 4T 20W-40 (1L)", brand: "Castrol", qty: 1, unitRetail: 380, unitPurchase: 280, total: 380 }
+        ],
+        totalPartsAmount: 380,
+        totalPartsCost: 280,
+        totalLabour: 400,
+        discount: 30,
+        totalAmount: 750,
+        estimatedProfit: 440,
+        date: new Date().toISOString().split('T')[0],
+        time: "10:15 AM"
+      }
+    ];
+
+    /* Sample Default Expenses */
+    const DEFAULT_EXPENSES = [
+      {
+        id: "exp-1",
+        category: "Tea & Breakfast",
+        amount: 80,
+        date: new Date().toISOString().split('T')[0],
+        notes: "Morning Chai & Gathiya"
+      },
+      {
+        id: "exp-2",
+        category: "Fuel Cost",
+        amount: 150,
+        date: new Date().toISOString().split('T')[0],
+        notes: "Parts pickup from Surendranagar main market"
+      }
+    ];
+
+    /* ========================================================
+       2. DATABASE INITIALIZATION & LOCALSTORAGE MANAGEMENT
+       ======================================================== */
+    let db = {
+      inventory: [],
+      expenses: [],
+      invoices: [],
+      settings: {
+        pin: "1234",
+        pinSet: false,
+        selectedLanguage: "gu",
+        garageName: "GJ13 AUTO GARAGE",
+        garagePhone: "9876543210"
+      }
+    };
+
+    function loadDatabase() {
+      try {
+        const inv = localStorage.getItem("gj13_inventory");
+        const exp = localStorage.getItem("gj13_expenses");
+        const bills = localStorage.getItem("gj13_invoices");
+        const setts = localStorage.getItem("gj13_settings");
+
+        db.inventory = inv ? JSON.parse(inv) : DEFAULT_INVENTORY;
+        db.expenses = exp ? JSON.parse(exp) : DEFAULT_EXPENSES;
+        db.invoices = bills ? JSON.parse(bills) : DEFAULT_INVOICES;
+        db.settings = setts ? JSON.parse(setts) : {
+          pin: "1234",
+          pinSet: true,
+          selectedLanguage: "gu",
+          garageName: "GJ13 AUTO GARAGE",
+          garagePhone: "9876543210"
+        };
+
+        if (!inv) saveDatabase();
+      } catch (e) {
+        console.error("Failed loading from localStorage, using defaults", e);
+        db.inventory = [...DEFAULT_INVENTORY];
+        db.expenses = [...DEFAULT_EXPENSES];
+        db.invoices = [...DEFAULT_INVOICES];
+      }
+    }
+
+    function saveDatabase() {
+      try {
+        localStorage.setItem("gj13_inventory", JSON.stringify(db.inventory));
+        localStorage.setItem("gj13_expenses", JSON.stringify(db.expenses));
+        localStorage.setItem("gj13_invoices", JSON.stringify(db.invoices));
+        localStorage.setItem("gj13_settings", JSON.stringify(db.settings));
+      } catch (e) {
+        console.error("Failed saving to localStorage", e);
+      }
+    }
+
+    /* ========================================================
+       3. PIN AUTHENTICATION SYSTEM
+       ======================================================== */
+    let enteredPin = "";
+    let pinSetupStep = 1; // 1: set, 2: confirm
+    let tempNewPin = "";
+
+    function initPinAuth() {
+      enteredPin = "";
+      updatePinDots();
+      document.getElementById('pinErrorMsg').textContent = "";
+
+      const pinScreen = document.getElementById('pinScreen');
+      const pinTitle = document.getElementById('pinTitle');
+      const pinSubtitle = document.getElementById('pinSubtitle');
+
+      pinScreen.classList.remove('hidden');
+
+      if (!db.settings.pinSet || !db.settings.pin) {
+        // First-time setup
+        pinSetupStep = 1;
+        pinTitle.textContent = getTranslation('setPinTitle');
+        pinSubtitle.textContent = "Please create a 4-digit PIN for your garage";
+      } else {
+        // Normal login
+        pinSetupStep = 0;
+        pinTitle.textContent = getTranslation('enterPinTitle');
+        pinSubtitle.textContent = getTranslation('pinSubtitle');
+      }
+    }
+
+    function handlePinInput(digit) {
+      if (enteredPin.length < 4) {
+        enteredPin += digit;
+        updatePinDots();
+        if (enteredPin.length === 4) {
+          setTimeout(verifyPinSubmission, 150);
+        }
+      }
+    }
+
+    function deletePinDigit() {
+      if (enteredPin.length > 0) {
+        enteredPin = enteredPin.slice(0, -1);
+        updatePinDots();
+        document.getElementById('pinErrorMsg').textContent = "";
+      }
+    }
+
+    function clearPin() {
+      enteredPin = "";
+      updatePinDots();
+      document.getElementById('pinErrorMsg').textContent = "";
+    }
+
+    function updatePinDots() {
+      const dots = document.querySelectorAll('#pinDotsContainer .pin-dot');
+      dots.forEach((dot, index) => {
+        if (index < enteredPin.length) {
+          dot.classList.add('bg-orange-500', 'border-orange-500', 'scale-110');
+          dot.classList.remove('border-white/50');
+        } else {
+          dot.classList.remove('bg-orange-500', 'border-orange-500', 'scale-110');
+          dot.classList.add('border-white/50');
+        }
+      });
+    }
+
+    function triggerPinShake() {
+      const container = document.getElementById('pinDotsContainer');
+      container.classList.add('shake-anim');
+      setTimeout(() => container.classList.remove('shake-anim'), 400);
+    }
+
+    function verifyPinSubmission() {
+      const pinTitle = document.getElementById('pinTitle');
+      const pinError = document.getElementById('pinErrorMsg');
+
+      if (pinSetupStep === 1) {
+        // Step 1: Save first entry, ask for confirmation
+        tempNewPin = enteredPin;
+        enteredPin = "";
+        pinSetupStep = 2;
+        updatePinDots();
+        pinTitle.textContent = getTranslation('confirmPinTitle');
+        pinError.textContent = "";
+      } else if (pinSetupStep === 2) {
+        // Step 2: Compare with first entry
+        if (enteredPin === tempNewPin) {
+          db.settings.pin = enteredPin;
+          db.settings.pinSet = true;
+          saveDatabase();
+          unlockApplication();
+        } else {
+          triggerPinShake();
+          pinError.textContent = "PINs did not match. Enter new PIN again.";
+          pinSetupStep = 1;
+          enteredPin = "";
+          updatePinDots();
+          pinTitle.textContent = getTranslation('setPinTitle');
+        }
+      } else {
+        // Standard Login
+        if (enteredPin === db.settings.pin) {
+          unlockApplication();
+        } else {
+          triggerPinShake();
+          pinError.textContent = "Incorrect PIN. Please try again.";
+          enteredPin = "";
+          updatePinDots();
+        }
+      }
+    }
+
+    function unlockApplication() {
+      const pinScreen = document.getElementById('pinScreen');
+      pinScreen.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        pinScreen.classList.add('hidden');
+      }, 300);
+      refreshAllViews();
+    }
+
+    function lockApp() {
+      enteredPin = "";
+      updatePinDots();
+      document.getElementById('pinErrorMsg').textContent = "";
+      const pinScreen = document.getElementById('pinScreen');
+      pinScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+      initPinAuth();
+    }
+
+    function promptChangePin() {
+      const current = prompt("Enter current 4-digit PIN:");
+      if (current === db.settings.pin) {
+        const newPin = prompt("Enter new 4-digit PIN (numbers only):");
+        if (newPin && newPin.length === 4 && !isNaN(newPin)) {
+          db.settings.pin = newPin;
+          saveDatabase();
+          alert("PIN updated successfully! Your new PIN is: " + newPin);
+        } else {
+          alert("Invalid PIN. Must be exactly 4 digits.");
+        }
+      } else if (current !== null) {
+        alert("Incorrect current PIN.");
+      }
+    }
+
+    /* ========================================================
+       4. LANGUAGE SELECTION & INSTANT TRANSLATION ENGINE
+       ======================================================== */
+    let currentLang = "gu";
+
+    function getTranslation(key) {
+      if (translations[currentLang] && translations[currentLang][key]) {
+        return translations[currentLang][key];
+      }
+      return (translations.en[key] || key);
+    }
+
+    function setLanguage(lang) {
+      if (!translations[lang]) return;
+      currentLang = lang;
+      db.settings.selectedLanguage = lang;
+      saveDatabase();
+
+      // Update Header & Pin buttons
+      document.querySelectorAll('.lang-btn, .lang-btn-pin').forEach(btn => {
+        if (btn.getAttribute('data-lang') === lang) {
+          btn.classList.add('bg-orange-500', 'text-white');
+          btn.classList.remove('text-slate-300', 'hover:text-white');
+        } else {
+          btn.classList.remove('bg-orange-500', 'text-white');
+          btn.classList.add('text-slate-300');
+        }
+      });
+
+      // Translate all DOM elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (key) {
+          el.textContent = getTranslation(key);
+        }
+      });
+
+      // Render Dynamic Views so their labels update
+      renderServicesCheckboxes();
+      renderStockDropdown();
+      refreshAllViews();
+    }
+
+    /* ========================================================
+       5. NAVIGATION & TAB SWITCHING
+       ======================================================== */
+    let currentTab = "home";
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const views = {
+        home: document.getElementById('viewHome'),
+        bill: document.getElementById('viewBill'),
+        stock: document.getElementById('viewStock'),
+        reports: document.getElementById('viewReports')
+      };
+
+      Object.keys(views).forEach(k => {
+        if (k === tab) {
+          views[k].classList.remove('hidden');
+        } else {
+          views[k].classList.add('hidden');
+        }
+      });
+
+      // Highlight active nav button
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tab) {
+          btn.classList.add('text-[#0F2C59]');
+          btn.classList.remove('text-slate-500');
+          const icon = btn.querySelector('i');
+          if (icon) icon.classList.add('text-orange-500', 'scale-110');
+        } else {
+          btn.classList.remove('text-[#0F2C59]');
+          btn.classList.add('text-slate-500');
+          const icon = btn.querySelector('i');
+          if (icon) icon.classList.remove('text-orange-500', 'scale-110');
+        }
+      });
+
+      if (tab === 'reports') {
+        renderReports();
+      } else if (tab === 'stock') {
+        renderStockList();
+      } else if (tab === 'bill') {
+        renderStockDropdown();
+      } else if (tab === 'home') {
+        renderDashboard();
+      }
+    }
+
+    /* ========================================================
+       6. DASHBOARD LOGIC (HOME)
+       ======================================================== */
+    function renderDashboard() {
+      // Date formatting
+      const now = new Date();
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('currentDateDisplay').textContent = now.toLocaleDateString('en-IN', options);
+
+      const todayStr = now.toISOString().split('T')[0];
+
+      // Filter today's invoices
+      const todayInvoices = db.invoices.filter(inv => inv.date === todayStr);
+      const todaySales = todayInvoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
+      const todayPartsCost = todayInvoices.reduce((sum, inv) => sum + (Number(inv.totalPartsCost) || 0), 0);
+
+      // Filter today's expenses
+      const todayExpensesList = db.expenses.filter(exp => exp.date === todayStr);
+      const todayExpenses = todayExpensesList.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+
+      // Net profit = Sales - Parts Cost - Expenses
+      const todayNetProfit = todaySales - todayPartsCost - todayExpenses;
+
+      document.getElementById('dashTodaySales').textContent = `₹${todaySales.toLocaleString('en-IN')}`;
+      document.getElementById('dashTodayExpenses').textContent = `₹${todayExpenses.toLocaleString('en-IN')}`;
+      
+      const profitEl = document.getElementById('dashTodayProfit');
+      profitEl.textContent = `₹${todayNetProfit.toLocaleString('en-IN')}`;
+      if (todayNetProfit < 0) {
+        profitEl.className = "text-base font-extrabold text-red-600";
+      } else {
+        profitEl.className = "text-base font-extrabold text-[#16A34A]";
+      }
+
+      // Stock calculations
+      let totalStockVal = 0;
+      let lowCount = 0;
+      db.inventory.forEach(item => {
+        totalStockVal += (Number(item.purchasePrice) || 0) * (Number(item.stockQty) || 0);
+        if (Number(item.stockQty) < 3) lowCount++;
+      });
+
+      document.getElementById('dashTotalStockValue').textContent = `₹${totalStockVal.toLocaleString('en-IN')}`;
+      document.getElementById('dashLowStockCount').textContent = `${lowCount} Items`;
+
+      // Update alert badge on nav
+      const navBadge = document.getElementById('navStockAlertBadge');
+      if (lowCount > 0) {
+        navBadge.classList.remove('hidden');
+        navBadge.textContent = lowCount;
+      } else {
+        navBadge.classList.add('hidden');
+      }
+
+      // Recent Invoices Table
+      renderRecentInvoices();
+    }
+
+    function renderRecentInvoices() {
+      const container = document.getElementById('recentInvoicesList');
+      container.innerHTML = "";
+
+      if (db.invoices.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center italic">No invoices recorded yet</p>`;
+        return;
+      }
+
+      const recents = [...db.invoices].reverse().slice(0, 5);
+      recents.forEach(inv => {
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between py-2.5 hover:bg-slate-50 px-1 rounded-xl transition cursor-pointer";
+        div.onclick = () => showInvoiceDetailsModal(inv.id);
+
+        div.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-blue-50 text-[#0F2C59] flex items-center justify-center text-xs font-bold shrink-0">
+              <i class="fa-solid fa-motorcycle"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 leading-tight">${escapeHtml(inv.customer)}</h4>
+              <p class="text-[10px] text-slate-500">${escapeHtml(inv.bike)} • ${inv.date}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-black text-emerald-700 block">₹${(inv.totalAmount || 0).toLocaleString('en-IN')}</span>
+            <span class="text-[9px] text-slate-400">${inv.time || ''}</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    /* ========================================================
+       7. BILLING & INVOICE CREATION
+       ======================================================== */
+    let billedParts = [];
+
+    function renderServicesCheckboxes() {
+      const grid = document.getElementById('servicesCheckboxGrid');
+      grid.innerHTML = "";
+
+      SERVICES_MASTER.forEach(srv => {
+        const label = document.createElement('label');
+        label.className = "flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/70 cursor-pointer active:scale-98 transition";
+        label.innerHTML = `
+          <div class="flex items-center gap-2">
+            <input type="checkbox" value="${srv.id}" data-price="${srv.price}" onchange="calculateBillTotals()" class="srv-checkbox rounded text-[#0F2C59] focus:ring-0 w-4 h-4">
+            <span class="text-xs font-semibold text-slate-700">${getTranslation(srv.key)}</span>
+          </div>
+          <span class="text-xs font-bold text-slate-800">₹${srv.price}</span>
+        `;
+        grid.appendChild(label);
+      });
+    }
+
+    function renderStockDropdown() {
+      const select = document.getElementById('partSelectDropdown');
+      select.innerHTML = `<option value="">${getTranslation('selectPartPlaceholder')}</option>`;
+
+      db.inventory.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.name} (${item.brand}) - ₹${item.retailPrice} [Stock: ${item.stockQty}]`;
+        if (item.stockQty <= 0) {
+          option.textContent += " - OUT OF STOCK";
+          option.disabled = true;
+        }
+        select.appendChild(option);
+      });
+
+      select.onchange = () => {
+        const selectedId = select.value;
+        const part = db.inventory.find(p => p.id === selectedId);
+        const preview = document.getElementById('partStockPreview');
+        if (part) {
+          preview.textContent = `${part.stockQty} pcs (₹${part.retailPrice})`;
+          if (part.stockQty < 3) {
+            preview.className = "text-xs font-extrabold text-red-600";
+          } else {
+            preview.className = "text-xs font-extrabold text-emerald-600";
+          }
+        } else {
+          preview.textContent = "-";
+          preview.className = "text-xs font-extrabold text-slate-600";
+        }
+      };
+    }
+
+    function addPartToBill() {
+      const select = document.getElementById('partSelectDropdown');
+      const qtyInput = document.getElementById('partQtyInput');
+      const partId = select.value;
+      const qty = parseInt(qtyInput.value) || 0;
+
+      if (!partId) {
+        alert("Please select a spare part first.");
+        return;
+      }
+      if (qty <= 0) {
+        alert("Please enter a valid quantity (at least 1).");
+        return;
+      }
+
+      const part = db.inventory.find(p => p.id === partId);
+      if (!part) return;
+
+      // Check current already billed quantity
+      const existing = billedParts.find(bp => bp.id === partId);
+      const totalRequested = (existing ? existing.qty : 0) + qty;
+
+      if (totalRequested > part.stockQty) {
+        alert(`Cannot add ${qty} units. Only ${part.stockQty} in stock!`);
+        return;
+      }
+
+      if (existing) {
+        existing.qty += qty;
+        existing.total = existing.qty * existing.unitRetail;
+      } else {
+        billedParts.push({
+          id: part.id,
+          name: part.name,
+          brand: part.brand,
+          unitRetail: Number(part.retailPrice),
+          unitPurchase: Number(part.purchasePrice),
+          qty: qty,
+          total: qty * Number(part.retailPrice)
+        });
+      }
+
+      // Reset picker
+      select.value = "";
+      qtyInput.value = "1";
+      document.getElementById('partStockPreview').textContent = "-";
+
+      renderBilledPartsList();
+      calculateBillTotals();
+    }
+
+    function removeBilledPart(partId) {
+      billedParts = billedParts.filter(p => p.id !== partId);
+      renderBilledPartsList();
+      calculateBillTotals();
+    }
+
+    function renderBilledPartsList() {
+      const container = document.getElementById('billedPartsContainer');
+      container.innerHTML = "";
+
+      if (billedParts.length === 0) {
+        container.innerHTML = `<p id="noPartsAddedMsg" class="text-center text-xs text-slate-400 py-2 italic">${getTranslation('noPartsYet')}</p>`;
+        return;
+      }
+
+      billedParts.forEach(p => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs";
+        row.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-800">${escapeHtml(p.name)}</span>
+            <span class="block text-[10px] text-slate-500">${p.qty} × ₹${p.unitRetail}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-slate-800">₹${p.total}</span>
+            <button onclick="removeBilledPart('${p.id}')" class="text-red-500 hover:text-red-700 px-1 text-sm"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function calculateBillTotals() {
+      // 1. Services total
+      let servicesSum = 0;
+      let count = 0;
+      document.querySelectorAll('.srv-checkbox:checked').forEach(cb => {
+        servicesSum += Number(cb.getAttribute('data-price')) || 0;
+        count++;
+      });
+      document.getElementById('servicesCountBadge').textContent = `${count} selected`;
+
+      // 2. Parts total
+      const partsSum = billedParts.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+
+      // 3. Manual Labour
+      const labour = Number(document.getElementById('manualLabourInput').value) || 0;
+
+      // 4. Discount
+      const discount = Number(document.getElementById('billDiscountInput').value) || 0;
+
+      // Grand Total
+      const grandTotal = Math.max(0, servicesSum + partsSum + labour - discount);
+
+      document.getElementById('summaryServicesTotal').textContent = `₹${servicesSum}`;
+      document.getElementById('summaryPartsTotal').textContent = `₹${partsSum}`;
+      document.getElementById('summaryLabourTotal').textContent = `₹${labour}`;
+      document.getElementById('summaryGrandTotal').textContent = `₹${grandTotal.toLocaleString('en-IN')}`;
+
+      return {
+        servicesSum,
+        partsSum,
+        labour,
+        discount,
+        grandTotal
+      };
+    }
+
+    function resetBillForm() {
+      document.getElementById('custName').value = "";
+      document.getElementById('custPhone').value = "";
+      document.getElementById('bikeModel').value = "";
+      document.querySelectorAll('.srv-checkbox').forEach(cb => cb.checked = false);
+      document.getElementById('manualLabourInput').value = "0";
+      document.getElementById('billDiscountInput').value = "0";
+      billedParts = [];
+      renderBilledPartsList();
+      calculateBillTotals();
+    }
+
+    function saveInvoiceAndProcess() {
+      const custName = document.getElementById('custName').value.trim();
+      const custPhone = document.getElementById('custPhone').value.trim();
+      const bikeModel = document.getElementById('bikeModel').value.trim();
+
+      if (!custName) {
+        alert("Please enter Customer Name.");
+        document.getElementById('custName').focus();
+        return;
+      }
+      if (!custPhone || custPhone.length < 10 || isNaN(custPhone)) {
+        alert("Please enter a valid 10-digit Indian Mobile Number.");
+        document.getElementById('custPhone').focus();
+        return;
+      }
+      if (!bikeModel) {
+        alert("Please enter Bike / Scooter Model.");
+        document.getElementById('bikeModel').focus();
+        return;
+      }
+
+      const totals = calculateBillTotals();
+      if (totals.grandTotal <= 0 && billedParts.length === 0) {
+        alert("Please select at least one service or spare part.");
+        return;
+      }
+
+      // Re-verify and deduct inventory stock
+      for (const bp of billedParts) {
+        const inventoryItem = db.inventory.find(i => i.id === bp.id);
+        if (!inventoryItem || inventoryItem.stockQty < bp.qty) {
+          alert(`Not enough stock for ${bp.name}. Available: ${inventoryItem ? inventoryItem.stockQty : 0}`);
+          return;
+        }
+      }
+
+      // Gather selected services
+      const selectedServices = [];
+      document.querySelectorAll('.srv-checkbox:checked').forEach(cb => {
+        const srvObj = SERVICES_MASTER.find(s => s.id === cb.value);
+        if (srvObj) {
+          selectedServices.push({
+            name: getTranslation(srvObj.key),
+            price: srvObj.price
+          });
+        }
+      });
+
+      // Calculate parts purchase cost for net profit
+      let partsPurchaseCost = 0;
+      billedParts.forEach(bp => {
+        partsPurchaseCost += (bp.unitPurchase * bp.qty);
+      });
+
+      // Stock deduction
+      billedParts.forEach(bp => {
+        const item = db.inventory.find(i => i.id === bp.id);
+        if (item) {
+          item.stockQty = Math.max(0, item.stockQty - bp.qty);
+        }
+      });
+
+      // Generate invoice record
+      const now = new Date();
+      const invId = "INV-" + (db.invoices.length + 1001);
+      const invoiceRecord = {
+        id: invId,
+        customer: custName,
+        phone: custPhone,
+        bike: bikeModel,
+        servicesSelected: selectedServices,
+        partsUsed: [...billedParts],
+        totalPartsAmount: totals.partsSum,
+        totalPartsCost: partsPurchaseCost,
+        totalLabour: totals.servicesSum + totals.labour,
+        discount: totals.discount,
+        totalAmount: totals.grandTotal,
+        estimatedProfit: totals.grandTotal - partsPurchaseCost,
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      db.invoices.push(invoiceRecord);
+      saveDatabase();
+
+      // Refresh inventory dropdowns & views
+      renderStockDropdown();
+      renderDashboard();
+      renderStockList();
+
+      // Display Receipt and WhatsApp button
+      showInvoiceSuccessModal(invoiceRecord);
+    }
+
+    function showInvoiceSuccessModal(invoice) {
+      document.getElementById('receiptInvNo').textContent = invoice.id;
+      document.getElementById('receiptDateTime').textContent = `${invoice.date} ${invoice.time}`;
+      document.getElementById('receiptCustName').textContent = invoice.customer;
+      document.getElementById('receiptPhone').textContent = invoice.phone;
+      document.getElementById('receiptBike').textContent = invoice.bike;
+
+      const itemsContainer = document.getElementById('receiptItemsList');
+      itemsContainer.innerHTML = "";
+
+      invoice.servicesSelected.forEach(s => {
+        itemsContainer.innerHTML += `
+          <div class="flex justify-between">
+            <span>• ${escapeHtml(s.name)}</span>
+            <span>₹${s.price}</span>
+          </div>
+        `;
+      });
+
+      invoice.partsUsed.forEach(p => {
+        itemsContainer.innerHTML += `
+          <div class="flex justify-between">
+            <span>• ${escapeHtml(p.name)} (${p.qty}x)</span>
+            <span>₹${p.total}</span>
+          </div>
+        `;
+      });
+
+      if (invoice.totalLabour > 0 && invoice.servicesSelected.length === 0) {
+        itemsContainer.innerHTML += `
+          <div class="flex justify-between">
+            <span>• Labour Charge</span>
+            <span>₹${invoice.totalLabour}</span>
+          </div>
+        `;
+      }
+
+      if (invoice.discount > 0) {
+        itemsContainer.innerHTML += `
+          <div class="flex justify-between text-orange-600 font-bold">
+            <span>Discount:</span>
+            <span>-₹${invoice.discount}</span>
+          </div>
+        `;
+      }
+
+      document.getElementById('receiptGrandTotal').textContent = `₹${invoice.totalAmount.toLocaleString('en-IN')}`;
+
+      // Build WhatsApp message
+      let waText = `*GJ13 AUTO GARAGE* 🔧🏍️\n`;
+      waText += `📍 Main Road, Surendranagar\n`;
+      waText += `--------------------------------\n`;
+      waText += `*Invoice:* ${invoice.id}\n`;
+      waText += `*Date:* ${invoice.date} ${invoice.time}\n`;
+      waText += `*Customer:* ${invoice.customer}\n`;
+      waText += `*Bike Model:* ${invoice.bike}\n\n`;
+
+      if (invoice.servicesSelected.length > 0) {
+        waText += `*Services Done:*\n`;
+        invoice.servicesSelected.forEach(s => {
+          waText += `• ${s.name}: ₹${s.price}\n`;
+        });
+        waText += `\n`;
+      }
+
+      if (invoice.partsUsed.length > 0) {
+        waText += `*Parts Replaced:*\n`;
+        invoice.partsUsed.forEach(p => {
+          waText += `• ${p.name} (${p.qty}x): ₹${p.total}\n`;
+        });
+        waText += `\n`;
+      }
+
+      if (invoice.discount > 0) {
+        waText += `*Discount:* ₹${invoice.discount}\n`;
+      }
+
+      waText += `*FINAL BILL AMOUNT:* ₹${invoice.totalAmount}\n`;
+      waText += `--------------------------------\n`;
+      waText += `Thank you for choosing *GJ13 AUTO GARAGE*! 🛵\n`;
+      waText += `Call: +91 98765 43210. Drive Safely!`;
+
+      // Indian mobile format
+      let formattedPhone = invoice.phone.replace(/\D/g, '');
+      if (formattedPhone.length === 10) formattedPhone = '91' + formattedPhone;
+
+      const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(waText)}`;
+      
+      const waBtn = document.getElementById('btnShareWhatsApp');
+      waBtn.onclick = () => {
+        window.open(waUrl, '_blank');
+      };
+
+      document.getElementById('invoiceSuccessModal').classList.remove('hidden');
+    }
+
+    function showInvoiceDetailsModal(invId) {
+      const inv = db.invoices.find(i => i.id === invId);
+      if (inv) showInvoiceSuccessModal(inv);
+    }
+
+    /* ========================================================
+       8. STOCK / INVENTORY MANAGEMENT
+       ======================================================== */
+    let filterLowOnly = false;
+
+    function renderStockList() {
+      const container = document.getElementById('stockListContainer');
+      const searchQuery = (document.getElementById('stockSearchInput').value || "").toLowerCase().trim();
+      container.innerHTML = "";
+
+      let filtered = db.inventory.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery) || item.brand.toLowerCase().includes(searchQuery);
+        if (filterLowOnly) {
+          return matchesSearch && item.stockQty < 3;
+        }
+        return matchesSearch;
+      });
+
+      // Update KPI cards on Stock tab
+      let totalVal = 0;
+      let totalRetail = 0;
+      let lowCount = 0;
+      let outCount = 0;
+
+      db.inventory.forEach(item => {
+        totalVal += (item.purchasePrice * item.stockQty);
+        totalRetail += (item.retailPrice * item.stockQty);
+        if (item.stockQty <= 0) outCount++;
+        else if (item.stockQty < 3) lowCount++;
+      });
+
+      document.getElementById('stockTabValue').textContent = `₹${totalVal.toLocaleString('en-IN')}`;
+      document.getElementById('stockTabRetailVal').textContent = `Retail: ₹${totalRetail.toLocaleString('en-IN')}`;
+      document.getElementById('stockTabTotalItems').textContent = db.inventory.length;
+      document.getElementById('stockTabLowCount').textContent = `${lowCount} Low`;
+      document.getElementById('stockTabOutCount').textContent = `${outCount} Out`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center italic">No matching inventory items</p>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between";
+
+        let badgeClass = "bg-emerald-100 text-emerald-800";
+        let statusText = `${item.stockQty} in stock`;
+        if (item.stockQty <= 0) {
+          badgeClass = "bg-slate-200 text-slate-700 font-extrabold";
+          statusText = "OUT OF STOCK";
+        } else if (item.stockQty < 3) {
+          badgeClass = "bg-red-100 text-red-700 font-extrabold animate-pulse";
+          statusText = `LOW STOCK (${item.stockQty})`;
+        }
+
+        div.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <h4 class="text-xs font-extrabold text-slate-800">${escapeHtml(item.name)}</h4>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${badgeClass}">${statusText}</span>
+            </div>
+            <p class="text-[11px] text-slate-500">${escapeHtml(item.brand)} • Buy: ₹${item.purchasePrice} | Sell: <strong class="text-emerald-700">₹${item.retailPrice}</strong></p>
+            <p class="text-[10px] text-slate-400">Total Value: ₹${(item.purchasePrice * item.stockQty).toLocaleString('en-IN')}</p>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="quickAddStock('${item.id}')" class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 flex items-center justify-center text-xs font-bold transition" title="Add 1 Qty">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <button onclick="editPartRecord('${item.id}')" class="w-8 h-8 rounded-xl bg-blue-50 text-[#0F2C59] hover:bg-blue-100 active:scale-95 flex items-center justify-center text-xs font-bold transition" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="deletePartRecord('${item.id}')" class="w-8 h-8 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 flex items-center justify-center text-xs font-bold transition" title="Delete">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function toggleLowStockFilter() {
+      filterLowOnly = !filterLowOnly;
+      const btn = document.getElementById('lowStockFilterBtn');
+      if (filterLowOnly) {
+        btn.classList.add('bg-red-500', 'text-white', 'border-red-500');
+        btn.classList.remove('bg-slate-50', 'text-slate-600');
+      } else {
+        btn.classList.remove('bg-red-500', 'text-white', 'border-red-500');
+        btn.classList.add('bg-slate-50', 'text-slate-600');
+      }
+      renderStockList();
+    }
+
+    function filterLowStockOnly() {
+      filterLowOnly = true;
+      const btn = document.getElementById('lowStockFilterBtn');
+      btn.classList.add('bg-red-500', 'text-white', 'border-red-500');
+      btn.classList.remove('bg-slate-50', 'text-slate-600');
+      renderStockList();
+    }
+
+    function quickAddStock(partId) {
+      const part = db.inventory.find(p => p.id === partId);
+      if (part) {
+        part.stockQty += 1;
+        saveDatabase();
+        renderStockList();
+        renderDashboard();
+      }
+    }
+
+    function openAddStockModal() {
+      document.getElementById('partModalTitle').textContent = getTranslation('addNewPart');
+      document.getElementById('modalPartId').value = "";
+      document.getElementById('modalPartName').value = "";
+      document.getElementById('modalPartBrand').value = "";
+      document.getElementById('modalPartPurchase').value = "";
+      document.getElementById('modalPartRetail').value = "";
+      document.getElementById('modalPartQty').value = "";
+      document.getElementById('partModal').classList.remove('hidden');
+    }
+
+    function editPartRecord(partId) {
+      const part = db.inventory.find(p => p.id === partId);
+      if (!part) return;
+
+      document.getElementById('partModalTitle').textContent = "Edit Spare Part";
+      document.getElementById('modalPartId').value = part.id;
+      document.getElementById('modalPartName').value = part.name;
+      document.getElementById('modalPartBrand').value = part.brand;
+      document.getElementById('modalPartPurchase').value = part.purchasePrice;
+      document.getElementById('modalPartRetail').value = part.retailPrice;
+      document.getElementById('modalPartQty').value = part.stockQty;
+      document.getElementById('partModal').classList.remove('hidden');
+    }
+
+    function savePartRecord() {
+      const partId = document.getElementById('modalPartId').value;
+      const name = document.getElementById('modalPartName').value.trim();
+      const brand = document.getElementById('modalPartBrand').value.trim();
+      const purchase = parseFloat(document.getElementById('modalPartPurchase').value);
+      const retail = parseFloat(document.getElementById('modalPartRetail').value);
+      const qty = parseInt(document.getElementById('modalPartQty').value);
+
+      if (!name || !brand || isNaN(purchase) || isNaN(retail) || isNaN(qty)) {
+        alert("Please fill all required fields correctly.");
+        return;
+      }
+      if (qty < 0 || purchase < 0 || retail < 0) {
+        alert("Values cannot be negative.");
+        return;
+      }
+
+      if (partId) {
+        // Edit existing
+        const item = db.inventory.find(p => p.id === partId);
+        if (item) {
+          item.name = name;
+          item.brand = brand;
+          item.purchasePrice = purchase;
+          item.retailPrice = retail;
+          item.stockQty = qty;
+        }
+      } else {
+        // Check if duplicate part exists
+        const existing = db.inventory.find(p => p.name.toLowerCase() === name.toLowerCase() && p.brand.toLowerCase() === brand.toLowerCase());
+        if (existing) {
+          if (confirm(`Part "${name}" by ${brand} already exists in inventory (Current Stock: ${existing.stockQty}). Do you want to add ${qty} to existing stock?`)) {
+            existing.stockQty += qty;
+            existing.purchasePrice = purchase;
+            existing.retailPrice = retail;
+          } else {
+            return;
+          }
+        } else {
+          db.inventory.push({
+            id: "p_" + Date.now(),
+            name,
+            brand,
+            purchasePrice: purchase,
+            retailPrice: retail,
+            stockQty: qty
+          });
+        }
+      }
+
+      saveDatabase();
+      closeModal('partModal');
+      renderStockList();
+      renderDashboard();
+      renderStockDropdown();
+    }
+
+    function deletePartRecord(partId) {
+      const part = db.inventory.find(p => p.id === partId);
+      if (!part) return;
+
+      if (confirm(`Are you sure you want to delete "${part.name}" from inventory?`)) {
+        db.inventory = db.inventory.filter(p => p.id !== partId);
+        saveDatabase();
+        renderStockList();
+        renderDashboard();
+        renderStockDropdown();
+      }
+    }
+
+    /* ========================================================
+       9. REPORTS & EXPENSE MANAGEMENT
+       ======================================================== */
+    let currentReportFilter = "daily";
+    let performanceChartInstance = null;
+
+    function setReportTimeFilter(filter) {
+      currentReportFilter = filter;
+      document.querySelectorAll('.report-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === filter) {
+          btn.classList.add('bg-[#0F2C59]', 'text-white');
+          btn.classList.remove('text-slate-600', 'hover:bg-slate-50');
+        } else {
+          btn.classList.remove('bg-[#0F2C59]', 'text-white');
+          btn.classList.add('text-slate-600');
+        }
+      });
+      renderReports();
+    }
+
+    function renderReports() {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+
+      // Calculate date boundary
+      let filteredInvoices = [];
+      let filteredExpenses = [];
+
+      if (currentReportFilter === 'daily') {
+        filteredInvoices = db.invoices.filter(i => i.date === todayStr);
+        filteredExpenses = db.expenses.filter(e => e.date === todayStr);
+      } else if (currentReportFilter === 'weekly') {
+        const weekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+        filteredInvoices = db.invoices.filter(i => i.date >= weekAgo && i.date <= todayStr);
+        filteredExpenses = db.expenses.filter(e => e.date >= weekAgo && e.date <= todayStr);
+      } else if (currentReportFilter === 'monthly') {
+        const currentMonth = todayStr.substring(0, 7); // YYYY-MM
+        filteredInvoices = db.invoices.filter(i => i.date.startsWith(currentMonth));
+        filteredExpenses = db.expenses.filter(e => e.date.startsWith(currentMonth));
+      } else {
+        // All
+        filteredInvoices = [...db.invoices];
+        filteredExpenses = [...db.expenses];
+      }
+
+      // Calculations
+      const totalSales = filteredInvoices.reduce((s, i) => s + (Number(i.totalAmount) || 0), 0);
+      const totalPartsCost = filteredInvoices.reduce((s, i) => s + (Number(i.totalPartsCost) || 0), 0);
+      const totalLabourIncome = filteredInvoices.reduce((s, i) => s + (Number(i.totalLabour) || 0), 0);
+      const totalExpenses = filteredExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+      // ACCURATE NET PROFIT = Total Sales - Parts Cost - Expenses
+      const netProfit = totalSales - totalPartsCost - totalExpenses;
+
+      document.getElementById('reportSales').textContent = `₹${totalSales.toLocaleString('en-IN')}`;
+      document.getElementById('reportExpenses').textContent = `₹${totalExpenses.toLocaleString('en-IN')}`;
+      document.getElementById('reportPartsCost').textContent = `₹${totalPartsCost.toLocaleString('en-IN')}`;
+      document.getElementById('reportLabourIncome').textContent = `₹${totalLabourIncome.toLocaleString('en-IN')}`;
+
+      const netProfitEl = document.getElementById('reportNetProfit');
+      netProfitEl.textContent = `₹${netProfit.toLocaleString('en-IN')}`;
+
+      const statusTag = document.getElementById('profitStatusTag');
+      if (netProfit >= 0) {
+        netProfitEl.className = "text-3xl font-black text-[#16A34A] mb-2";
+        statusTag.textContent = "Profitable";
+        statusTag.className = "bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full";
+      } else {
+        netProfitEl.className = "text-3xl font-black text-red-600 mb-2";
+        statusTag.textContent = "Loss";
+        statusTag.className = "bg-red-100 text-red-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full";
+      }
+
+      document.getElementById('repSubSales').textContent = totalSales;
+      document.getElementById('repSubCost').textContent = totalPartsCost;
+      document.getElementById('repSubExp').textContent = totalExpenses;
+
+      // Render Expense history list
+      renderExpenseList();
+
+      // Update Chart.js
+      updateChart(totalSales, totalPartsCost, totalExpenses, netProfit);
+    }
+
+    function renderExpenseList() {
+      const container = document.getElementById('expenseListContainer');
+      container.innerHTML = "";
+
+      if (db.expenses.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center italic">No expenses recorded</p>`;
+        return;
+      }
+
+      const expensesSorted = [...db.expenses].reverse().slice(0, 10);
+      expensesSorted.forEach(exp => {
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition text-xs";
+        div.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-800 block">${escapeHtml(exp.category)}</span>
+            <span class="text-[10px] text-slate-500">${exp.date} • ${escapeHtml(exp.notes || 'Kharch')}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-extrabold text-orange-600">₹${Number(exp.amount).toLocaleString('en-IN')}</span>
+            <button onclick="deleteExpenseRecord('${exp.id}')" class="text-slate-400 hover:text-red-500 text-sm"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function openAddExpenseModal() {
+      document.getElementById('modalExpAmount').value = "";
+      document.getElementById('modalExpDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modalExpNotes').value = "";
+      document.getElementById('expenseModal').classList.remove('hidden');
+    }
+
+    function saveExpenseRecord() {
+      const category = document.getElementById('modalExpCategory').value;
+      const amount = parseFloat(document.getElementById('modalExpAmount').value);
+      const date = document.getElementById('modalExpDate').value || new Date().toISOString().split('T')[0];
+      const notes = document.getElementById('modalExpNotes').value.trim();
+
+      if (!amount || isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid expense amount.");
+        return;
+      }
+
+      db.expenses.push({
+        id: "exp_" + Date.now(),
+        category,
+        amount,
+        date,
+        notes
+      });
+
+      saveDatabase();
+      closeModal('expenseModal');
+      renderReports();
+      renderDashboard();
+    }
+
+    function deleteExpenseRecord(expId) {
+      if (confirm("Delete this expense record?")) {
+        db.expenses = db.expenses.filter(e => e.id !== expId);
+        saveDatabase();
+        renderReports();
+        renderDashboard();
+      }
+    }
+
+    function updateChart(sales, partsCost, expenses, netProfit) {
+      const canvas = document.getElementById('performanceChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      if (performanceChartInstance) {
+        performanceChartInstance.destroy();
+      }
+
+      performanceChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Sales (Total)', 'Parts Cost', 'Expenses', 'Net Profit'],
+          datasets: [{
+            label: 'Amount (₹)',
+            data: [sales, partsCost, expenses, Math.max(0, netProfit)],
+            backgroundColor: [
+              '#16A34A', // Green
+              '#64748B', // Slate
+              '#F97316', // Orange
+              '#0F2C59'  // Navy
+            ],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return '₹' + val; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* ========================================================
+       10. BACKUP & RESTORE / UTILITY HELPERS
+       ======================================================== */
+    function exportBackupJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+      const downloadAnchor = document.createElement('a');
+      const filename = `gj13_garage_backup_${new Date().toISOString().split('T')[0]}.json`;
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", filename);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && imported.inventory && imported.invoices) {
+            if (confirm("Restore backup? Current garage data will be safely updated.")) {
+              db = imported;
+              saveDatabase();
+              refreshAllViews();
+              alert("Data restored successfully!");
+            }
+          } else {
+            alert("Invalid backup file format.");
+          }
+        } catch (err) {
+          alert("Error parsing backup JSON: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function confirmResetDemoData() {
+      if (confirm("Reset application to sample demo data? (All custom bills will be reset)")) {
+        db.inventory = [...DEFAULT_INVENTORY];
+        db.expenses = [...DEFAULT_EXPENSES];
+        db.invoices = [...DEFAULT_INVOICES];
+        saveDatabase();
+        refreshAllViews();
+        alert("Demo data loaded!");
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function refreshAllViews() {
+      renderDashboard();
+      renderStockDropdown();
+      renderStockList();
+      renderReports();
+    }
+
+    /* ========================================================
+       11. INITIALIZATION ON LOAD
+       ======================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDatabase();
+      currentLang = db.settings.selectedLanguage || "gu";
+      setLanguage(currentLang);
+      setReportTimeFilter('daily');
+      initPinAuth();
+    });
+  </script>
+</body>
+</html>

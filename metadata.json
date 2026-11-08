@@ -1,0 +1,6 @@
+{
+  "name": "GJ13 Auto Garage",
+  "description": "Khatabook-style mobile billing, stock inventory, and hisaab app for GJ13 Auto Garage with Gujarati, Hindi, and English support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
