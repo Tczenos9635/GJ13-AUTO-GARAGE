@@ -18,6 +18,7 @@ import com.example.ui.components.PinLockScreen
 import com.example.ui.screens.BillScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReportsScreen
+import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.StockScreen
 
 @Composable
@@ -66,8 +67,6 @@ fun GarageApp(
         Scaffold(
             topBar = {
                 GarageTopBar(
-                    selectedLanguage = language,
-                    onLanguageSelected = { viewModel.setLanguage(it) },
                     onLockClicked = { viewModel.lockApp() }
                 )
             },
@@ -144,7 +143,14 @@ fun GarageApp(
                             onAddExpense = { cat, amt, notes, date ->
                                 viewModel.addExpense(cat, amt, notes, date)
                             },
-                            onDeleteExpense = { viewModel.deleteExpense(it) },
+                            onDeleteExpense = { viewModel.deleteExpense(it) }
+                        )
+                    }
+                    NavTab.SETTINGS -> {
+                        SettingsScreen(
+                            currentLanguage = language,
+                            onLanguageChange = { viewModel.setLanguage(it) },
+                            onLockAppClick = { viewModel.lockApp() },
                             onResetDemoData = { viewModel.resetDemoData() }
                         )
                     }

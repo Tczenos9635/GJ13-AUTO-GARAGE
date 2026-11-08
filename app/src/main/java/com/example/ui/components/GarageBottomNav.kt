@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -142,8 +143,32 @@ fun GarageBottomNav(
             label = {
                 Text(
                     text = GarageStrings.get("navReports", language),
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = if (currentTab == NavTab.REPORTS) FontWeight.Bold else FontWeight.Medium
+                )
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = GarageOrange,
+                selectedTextColor = NavyPrimary,
+                indicatorColor = NavyPrimary.copy(alpha = 0.1f)
+            )
+        )
+
+        // Tab 5: Settings
+        NavigationBarItem(
+            selected = currentTab == NavTab.SETTINGS,
+            onClick = { onTabSelected(NavTab.SETTINGS) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = GarageStrings.get("navSettings", language)
+                )
+            },
+            label = {
+                Text(
+                    text = GarageStrings.get("navSettings", language),
+                    fontSize = 10.sp,
+                    fontWeight = if (currentTab == NavTab.SETTINGS) FontWeight.Bold else FontWeight.Medium
                 )
             },
             colors = NavigationBarItemDefaults.colors(

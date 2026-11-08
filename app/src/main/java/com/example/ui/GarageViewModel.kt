@@ -71,6 +71,20 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
     val timeFilter = MutableStateFlow(TimeFilter.DAILY)
 
     init {
+        // Automatically purge old template demo data (Pravinbhai Vaghela 750 / Chai 80 & Fuel 150) so app is completely fresh
+        val currentInvs = _invoices.value
+        if (currentInvs.any { it.id == "INV-1001" && it.customer == "Pravinbhai Vaghela" }) {
+            val cleaned = currentInvs.filterNot { it.id == "INV-1001" && it.customer == "Pravinbhai Vaghela" }
+            _invoices.value = cleaned
+            repo.saveInvoices(cleaned)
+        }
+        val currentExps = _expenses.value
+        if (currentExps.any { it.id in listOf("e1", "e2") && it.category in listOf("Tea & Breakfast", "Fuel Cost") }) {
+            val cleaned = currentExps.filterNot { it.id in listOf("e1", "e2") && it.category in listOf("Tea & Breakfast", "Fuel Cost") }
+            _expenses.value = cleaned
+            repo.saveExpenses(cleaned)
+        }
+
         if (!_settings.value.pinSet || _settings.value.pin.isEmpty()) {
             _isPinSetup.value = true
         }
@@ -354,10 +368,10 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun resetDemoData() {
-        repo.resetToDemoData()
+        repo.resetAllData()
         _inventory.value = GarageRepository.DEFAULT_INVENTORY
-        _expenses.value = repo.loadExpenses()
-        _invoices.value = repo.loadInvoices()
-        _settings.value = repo.loadSettings()
+        _expenses.value = emptyList()
+        _invoices.value = emptyList()
+        resetBillForm()
     }
 }

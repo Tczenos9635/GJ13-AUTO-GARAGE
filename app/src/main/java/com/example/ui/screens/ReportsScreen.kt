@@ -74,8 +74,7 @@ fun ReportsScreen(
     onFilterSelected: (TimeFilter) -> Unit,
     language: Language,
     onAddExpense: (String, Double, String, String) -> Unit,
-    onDeleteExpense: (String) -> Unit,
-    onResetDemoData: () -> Unit
+    onDeleteExpense: (String) -> Unit
 ) {
     var showExpenseDialog by remember { mutableStateOf(false) }
 
@@ -332,36 +331,6 @@ fun ReportsScreen(
                             IconButton(onClick = { onDeleteExpense(exp.id) }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete", tint = GarageRed, modifier = Modifier.size(18.dp))
                             }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Settings & Reset
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = GarageStrings.get("dataManagement", language), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                    Text(text = "Backup and restore data or reset demo configuration", fontSize = 11.sp, color = TextMuted)
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onResetDemoData,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.size(4.dp))
-                            Text(GarageStrings.get("resetDemo", language), fontSize = 11.sp)
                         }
                     }
                 }

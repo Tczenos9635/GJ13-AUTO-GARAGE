@@ -88,14 +88,7 @@ class GarageRepository(context: Context) {
     }
 
     fun loadExpenses(): List<Expense> {
-        val jsonStr = prefs.getString("expenses_json", null)
-        if (jsonStr == null) {
-            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            return listOf(
-                Expense("e1", "Tea & Breakfast", 80.0, today, "Morning Chai & Gathiya"),
-                Expense("e2", "Fuel Cost", 150.0, today, "Parts pickup from Surendranagar main market")
-            )
-        }
+        val jsonStr = prefs.getString("expenses_json", null) ?: return emptyList()
         return try {
             val array = JSONArray(jsonStr)
             val list = mutableListOf<Expense>()
@@ -132,33 +125,7 @@ class GarageRepository(context: Context) {
     }
 
     fun loadInvoices(): List<Invoice> {
-        val jsonStr = prefs.getString("invoices_json", null)
-        if (jsonStr == null) {
-            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            return listOf(
-                Invoice(
-                    id = "INV-1001",
-                    customer = "Pravinbhai Vaghela",
-                    phone = "9825123456",
-                    bike = "Hero HF Deluxe",
-                    servicesSelected = listOf(
-                        ServiceItem("srvGeneralService", "srvGeneralService", 350.0),
-                        ServiceItem("srvOilChange", "srvOilChange", 50.0)
-                    ),
-                    partsUsed = listOf(
-                        BilledPart("p1", "Castrol Activ 4T 20W-40 (1L)", "Castrol", 380.0, 280.0, 1, 380.0)
-                    ),
-                    totalPartsAmount = 380.0,
-                    totalPartsCost = 280.0,
-                    totalLabour = 400.0,
-                    discount = 30.0,
-                    totalAmount = 750.0,
-                    estimatedProfit = 440.0,
-                    date = today,
-                    time = "10:15 AM"
-                )
-            )
-        }
+        val jsonStr = prefs.getString("invoices_json", null) ?: return emptyList()
         return try {
             val array = JSONArray(jsonStr)
             val list = mutableListOf<Invoice>()
@@ -259,7 +226,13 @@ class GarageRepository(context: Context) {
         prefs.edit().putString("invoices_json", array.toString()).apply()
     }
 
+    fun resetAllData() {
+        saveInvoices(emptyList())
+        saveExpenses(emptyList())
+        saveInventory(DEFAULT_INVENTORY)
+    }
+
     fun resetToDemoData() {
-        prefs.edit().clear().apply()
+        resetAllData()
     }
 }

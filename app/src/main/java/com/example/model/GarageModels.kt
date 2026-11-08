@@ -7,7 +7,7 @@ enum class Language(val code: String, val label: String) {
 }
 
 enum class NavTab {
-    HOME, BILL, STOCK, REPORTS
+    HOME, BILL, STOCK, REPORTS, SETTINGS
 }
 
 enum class TimeFilter {

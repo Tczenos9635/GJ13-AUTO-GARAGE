@@ -32,8 +32,6 @@ import com.example.ui.theme.NavyPrimary
 
 @Composable
 fun GarageTopBar(
-    selectedLanguage: Language,
-    onLanguageSelected: (Language) -> Unit,
     onLockClicked: () -> Unit
 ) {
     Row(
@@ -44,7 +42,7 @@ fun GarageTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo & App Name ONLY (no address as requested)
+        // Logo & App Name ONLY (no address, no language pills cluttering the bar)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -71,52 +69,20 @@ fun GarageTopBar(
             )
         }
 
-        // Language Selector & Lock Icon
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        // Quick Lock Button
+        IconButton(
+            onClick = onLockClicked,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.White.copy(alpha = 0.12f))
         ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Black.copy(alpha = 0.25f))
-                    .padding(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Language.values().forEach { lang ->
-                    val isSelected = lang == selectedLanguage
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) GarageOrange else Color.Transparent)
-                            .clickable { onLanguageSelected(lang) }
-                            .padding(horizontal = 7.dp, vertical = 3.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = lang.label,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-            }
-
-            IconButton(
-                onClick = onLockClicked,
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.12f))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Lock App",
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Lock App",
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
