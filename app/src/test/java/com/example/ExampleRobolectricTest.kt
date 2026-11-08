@@ -1,21 +1,23 @@
 package com.example
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
+import com.example.model.Language
+import com.example.ui.GarageStrings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
 class ExampleRobolectricTest {
 
   @Test
-  fun `read string from context`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    val appName = context.getString(R.string.app_name)
-    assertEquals("My Application", appName)
+  fun testLocalizationStrings() {
+    val engName = GarageStrings.get("appTitle", Language.EN)
+    val gujName = GarageStrings.get("appTitle", Language.GU)
+    val hinName = GarageStrings.get("appTitle", Language.HI)
+
+    assertEquals("GJ13 AUTO GARAGE", engName)
+    assertEquals("GJ13 AUTO GARAGE", gujName)
+    assertEquals("GJ13 AUTO GARAGE", hinName)
+
+    assertTrue(GarageStrings.DEFAULT_SERVICES.isNotEmpty())
   }
 }
